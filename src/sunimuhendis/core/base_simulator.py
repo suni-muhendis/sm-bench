@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from typing import Any, ClassVar, Dict, Optional, Tuple
 
 class BaseSimulator(ABC):
     """
     Base class from which all simulators inherit.
     """
+
+    #: Physics version of this simulator, e.g. ``"v4"``. Numbers from two
+    #: versions are never comparable, so ``evaluate()`` stamps it onto every
+    #: result.
+    VERSION: ClassVar[Optional[str]] = None
     
     @abstractmethod
     def simulate(self, design_params: Dict[str, Any]) -> Tuple[bool, Dict[str, float], Dict[str, Any], str]:

@@ -48,6 +48,9 @@ result = make_env("heat_exchanger").evaluate(
     "wheel-smoke", payload["task"], "sample", payload["design"]
 )
 assert result.status == "success", result
+assert result.environment == "heat_exchanger", result.environment
+from importlib.metadata import entry_points
+assert "heat_exchanger" in {e.name for e in entry_points(group="sunimuhendis.environments")}
 import_path = Path(sunimuhendis.__file__).resolve()
 environment_root = Path(sys.prefix).resolve()
 assert import_path.is_relative_to(environment_root), (

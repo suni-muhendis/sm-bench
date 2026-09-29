@@ -2,7 +2,7 @@ import re
 import statistics
 from abc import ABC, abstractmethod
 from collections import Counter
-from typing import Dict, Any, List, Optional, Sequence
+from typing import Any, ClassVar, Dict, List, Optional, Sequence
 from .types import AuditReport, EvaluationResult, Requirement, ScoreResult
 from .base_simulator import BaseSimulator
 from .base_score import BaseScoreFunction
@@ -11,6 +11,9 @@ class BaseEnvironment(ABC):
     """
     Main environment class combining the simulator, reward function, and DRC validation.
     """
+
+    #: The name the environment is registered under, e.g. ``"heat_exchanger"``.
+    name: ClassVar[Optional[str]] = None
     
     def __init__(self, simulator: BaseSimulator, score_function: BaseScoreFunction):
         self.simulator = simulator
@@ -396,9 +399,29 @@ class BaseEnvironment(ABC):
         
     def evaluate(self, task_id: str, task_params: Dict[str, Any], design_id: str, design_params: Dict[str, Any]) -> EvaluationResult:
         """
-        Main evaluation loop.
+        Main evaluation loop: schema, DRC, simulation, score.
+
+        Every result, whatever stage it stopped at, is stamped with the
+        environment name and the simulator and score versions that produced
+        it, so a number can always be traced back to the physics it was
+        measured with.
         """
         score_fn = self.get_score_function(task_params)
+        result = self._run_pipeline(score_fn, task_id, task_params, design_id, design_params)
+        result.environment = self.name
+        result.simulator_version = getattr(self.simulator, "VERSION", None)
+        result.score_version = getattr(score_fn, "VERSION", None)
+        return result
+
+    def _run_pipeline(
+        self,
+        score_fn: BaseScoreFunction,
+        task_id: str,
+        task_params: Dict[str, Any],
+        design_id: str,
+        design_params: Dict[str, Any],
+    ) -> EvaluationResult:
+        """The four stages, cheapest first; the first failure short-circuits."""
         
         # 1. Schema Validation
         schema_valid, schema_err = self.validate_schema(design_params)

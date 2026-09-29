@@ -6,6 +6,31 @@ different simulator or score versions comparable.
 
 ## [Unreleased]
 
+Groundwork for moving each environment into a package of its own. No
+simulator or score behavior changed: every recorded benchmark design re-scores
+identically.
+
+### Added
+
+- Environments are discovered through the `sunimuhendis.environments`
+  entry-point group; this package registers `heat_exchanger` there. Two
+  packages registering the same name is an error.
+- `EvaluationResult` now carries `environment`, `simulator_version` and
+  `score_version`, stamped by `evaluate()` on every result.
+- `BaseSimulator.VERSION`, `BaseScoreFunction.VERSION` and
+  `BaseEnvironment.name`; every heat-exchanger score function declares its
+  version.
+- Benchmark records carry an `environment` field. A task may name its
+  environment with an `"environment"` key; tasks without one are
+  heat-exchanger tasks.
+
+### Changed
+
+- The benchmark runners and the rescoring script build environments through
+  `make_env` instead of importing heat-exchanger classes.
+- Manual zero-shot records now include the environment and the simulator and
+  score versions.
+
 ## [0.6.0] - 2026-09-21
 
 ### Changed

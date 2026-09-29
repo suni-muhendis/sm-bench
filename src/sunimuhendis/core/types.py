@@ -22,6 +22,10 @@ class EvaluationResult(BaseModel):
     score: ScoreResult
     metrics: Dict[str, Any] = Field(default_factory=dict, description="Raw engineering metrics returned from the simulator.")
     raw_simulation_output: Dict[str, Any] = Field(default_factory=dict, description="Other raw data the simulator might return (optional).")
+    environment: Optional[str] = Field(None, description="Name of the environment that produced this result.")
+    simulator_version: Optional[str] = Field(
+        None, description="Physics version of the simulator. Results from different versions are never pooled.")
+    score_version: Optional[str] = Field(None, description="Identifier of the score function that produced the score.")
 
 
 class Requirement(BaseModel):

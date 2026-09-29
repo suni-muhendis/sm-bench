@@ -34,6 +34,11 @@ Repository = "https://github.com/suni-muhendis/sm-bench.git"
 Issues = "https://github.com/suni-muhendis/sm-bench/issues"
 Changelog = "https://github.com/suni-muhendis/sm-bench/blob/main/CHANGELOG.md"
 
+# Environments are found by name through this entry-point group, so a package
+# that provides a new environment registers it here in its own pyproject.
+[project.entry-points."sunimuhendis.environments"]
+heat_exchanger = "sunimuhendis.environments.heat_exchanger:make_env"
+
 # Per-environment extras: install only the simulator deps you actually use,
 # e.g.  pip install "sunimuhendis[heat_exchanger] @ git+https://github.com/suni-muhendis/sm-bench.git@envs-v0.6.0"
 # Pin a tag, not a branch: simulator and score behaviour is versioned deliberately.

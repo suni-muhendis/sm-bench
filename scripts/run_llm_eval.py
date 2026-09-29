@@ -6,9 +6,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sunimuhendis.environments.heat_exchanger.env import HeatExchangerEnv
-from sunimuhendis.environments.heat_exchanger.simulator import HeatExchangerSimulator
-from sunimuhendis.environments.heat_exchanger.score import HeatExchangerScore
+from sunimuhendis import make_env
 from sunimuhendis.parsing.json_parser import parse_llm_json
 from sunimuhendis.model_clients.dummy_random import DummyRandomClient
 from sunimuhendis.model_clients.interactive_browser import InteractiveBrowserClient
@@ -23,10 +21,7 @@ def main():
 
     logger = setup_logger("llm_evaluator")
     
-    # 1. Setup Environment
-    env = HeatExchangerEnv(HeatExchangerSimulator(), HeatExchangerScore())
-    
-    # 2. Load Task
+    # 1. Load Task
     task_path = os.path.join(
         os.path.dirname(__file__),
         f'../results/zero_shot/{args.prompt}/task.json',
@@ -37,7 +32,11 @@ def main():
         
     with open(task_path, 'r', encoding='utf-8') as f:
         task_params = json.load(f)
-        
+
+    # 2. Setup Environment: the one the task names (older tasks are all
+    # heat-exchanger tasks and do not name one).
+    env = make_env(task_params.get("environment", "heat_exchanger"))
+
     # 3. Setup Client
     if args.client == "interactive":
         client = InteractiveBrowserClient()
@@ -96,6 +95,9 @@ def main():
                 "model_name": model_name,
                 "timestamp": datetime.now().isoformat(),
                 "prompt_slug": args.prompt,
+                "environment": res.environment,
+                "score_version": res.score_version,
+                "simulator_version": res.simulator_version,
                 "status": "success",
                 "error": None,
                 "weights": {

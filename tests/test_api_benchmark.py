@@ -35,7 +35,7 @@ _VALID_STATUS = {
 }
 
 
-def _make_prompt_unit(root, slug="he_test"):
+def _make_prompt_unit(root, slug="he_test", **task_overrides):
     prompt_dir = os.path.join(root, "zero_shot", slug)
     os.makedirs(prompt_dir, exist_ok=True)
     with open(os.path.join(prompt_dir, "prompt.txt"), "w", encoding="utf-8") as f:
@@ -46,6 +46,7 @@ def _make_prompt_unit(root, slug="he_test"):
         "w_eff": 0.2, "w_cost": 0.3,
         "target_heat_duty": 150000.0, "max_dp_tube": 50000.0, "max_dp_shell": 50000.0,
     }
+    task.update(task_overrides)
     with open(os.path.join(prompt_dir, "task.json"), "w", encoding="utf-8") as f:
         json.dump(task, f)
     return slug
@@ -76,6 +77,40 @@ def test_run_benchmark_offline(tmp_path):
     assert rec["status"] in _VALID_STATUS
     assert rec["prompt_slug"] == slug
     assert rec["weights"]["w_heat"] == 0.4
+
+
+@pytest.mark.parametrize("task_overrides, score_version", [
+    # A task that names neither is a heat-exchanger task scored with V1,
+    # exactly as every task recorded before tasks named their environment.
+    ({}, "heat_exchanger_score_v1"),
+    ({"environment": "heat_exchanger", "score_version": "heat_exchanger_score_v4"},
+     "heat_exchanger_score_v4"),
+])
+def test_run_benchmark_records_environment_and_versions(tmp_path, task_overrides, score_version):
+    slug = _make_prompt_unit(str(tmp_path), **task_overrides)
+    written = run_benchmark(
+        prompt_slug=slug,
+        model_specs=[{"name": "dummy"}],
+        client_factory=lambda spec: DummyRandomClient(),
+        repeats=1,
+        results_root=str(tmp_path),
+    )
+    rec = json.loads(open(written[0], encoding="utf-8").readline())
+    assert rec["environment"] == "heat_exchanger"
+    assert rec["simulator_version"] == "v4"
+    assert rec["score_version"] == score_version
+
+
+def test_run_benchmark_rejects_an_unknown_environment(tmp_path):
+    slug = _make_prompt_unit(str(tmp_path), environment="no_such_environment")
+    with pytest.raises(KeyError, match="no_such_environment"):
+        run_benchmark(
+            prompt_slug=slug,
+            model_specs=[{"name": "dummy"}],
+            client_factory=lambda spec: DummyRandomClient(),
+            repeats=1,
+            results_root=str(tmp_path),
+        )
 
 
 def test_run_benchmark_client_error_isolated(tmp_path):

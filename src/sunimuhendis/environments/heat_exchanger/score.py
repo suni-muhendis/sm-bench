@@ -3,6 +3,8 @@ from ...core.base_score import BaseScoreFunction
 from ...core.types import ScoreResult
 
 class HeatExchangerScoreV1(BaseScoreFunction):
+    VERSION = "heat_exchanger_score_v1"
+
     def calculate_score(self, task_params: Dict[str, Any], metrics: Dict[str, Any], is_valid: bool = True, error_message: Optional[str] = None) -> ScoreResult:
         if not is_valid:
             return ScoreResult(normalized_total=0.0, is_valid=False, error_message=error_message)
@@ -76,6 +78,8 @@ class HeatExchangerScoreV1(BaseScoreFunction):
         )
 
 class HeatExchangerScoreV2(BaseScoreFunction):
+    VERSION = "heat_exchanger_score_v2"
+
     def calculate_score(self, task_params: Dict[str, Any], metrics: Dict[str, Any], is_valid: bool = True, error_message: Optional[str] = None) -> ScoreResult:
         if not is_valid:
             return ScoreResult(normalized_total=0.0, is_valid=False, error_message=error_message)
@@ -185,6 +189,8 @@ class HeatExchangerScoreV3(BaseScoreFunction):
     performance so an undersized but cheap exchanger cannot receive full cost
     credit.
     """
+
+    VERSION = "heat_exchanger_score_v3"
 
     def calculate_score(
         self,
@@ -343,6 +349,8 @@ class HeatExchangerScoreV4(BaseScoreFunction):
     sample is uncorrelated with cost (r = 0.007) and so is a second, separate
     thing to be good at rather than something tradeable against the first.
     """
+
+    VERSION = "heat_exchanger_score_v4"
 
     def calculate_score(
         self,

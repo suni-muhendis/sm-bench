@@ -14,6 +14,8 @@ from .simulator import HeatExchangerSimulator
 
 
 class HeatExchangerEnv(BaseEnvironment):
+    name = "heat_exchanger"
+
     def validate_schema(self, design_params: Dict[str, Any]) -> tuple[bool, Optional[str]]:
         try:
             HeatExchangerDesign.model_validate(design_params)

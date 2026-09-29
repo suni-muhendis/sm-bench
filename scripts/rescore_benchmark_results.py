@@ -5,14 +5,15 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sunimuhendis.environments.heat_exchanger.score import get_score_function
+from sunimuhendis import make_env
 
 def main():
     parser = argparse.ArgumentParser(description="Rescore existing benchmark results using a new score version.")
     parser.add_argument("--input", type=str, required=True, help="Input JSONL file.")
     parser.add_argument("--output", type=str, required=True, help="Output JSONL file.")
     parser.add_argument("--score-version", type=str, default="heat_exchanger_score_v2", help="Score version to apply.")
-    
+    parser.add_argument("--environment", type=str, default="heat_exchanger", help="Environment that defines the score version.")
+
     args = parser.parse_args()
     
     if not os.path.exists(args.input):
@@ -20,7 +21,7 @@ def main():
         sys.exit(1)
         
     try:
-        score_fn = get_score_function(args.score_version)
+        score_fn = make_env(args.environment).get_score_function({"score_version": args.score_version})
     except Exception as e:
         print(f"Error instantiating score function: {e}")
         sys.exit(1)

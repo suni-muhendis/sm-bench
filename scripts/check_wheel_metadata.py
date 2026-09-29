@@ -34,7 +34,13 @@ def main():
         if len(metadata_files) != 1:
             raise RuntimeError("Expected exactly one METADATA file")
         metadata = BytesParser().parsebytes(archive.read(metadata_files[0]))
+        entry_point_files = [name for name in files if name.endswith(".dist-info/entry_points.txt")]
+        entry_points = (archive.read(entry_point_files[0]).decode("utf-8")
+                        if len(entry_point_files) == 1 else "")
 
+    # make_env() finds environments only through this entry point.
+    if "heat_exchanger = sunimuhendis.environments.heat_exchanger:make_env" not in entry_points:
+        raise RuntimeError("The heat_exchanger environment entry point is missing")
     if _specifier_parts(metadata["Requires-Python"]) != _specifier_parts(EXPECTED_REQUIRES_PYTHON):
         raise RuntimeError("Unexpected Requires-Python: {}".format(metadata["Requires-Python"]))
     if metadata["Version"] != expected_version:

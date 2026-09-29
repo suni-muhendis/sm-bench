@@ -16,10 +16,8 @@ try:
 except ImportError:
     pass
 
+from sunimuhendis import make_env
 from sunimuhendis.core.logging import setup_logger
-from sunimuhendis.environments.heat_exchanger.env import HeatExchangerEnv
-from sunimuhendis.environments.heat_exchanger.score import HeatExchangerScoreV1
-from sunimuhendis.environments.heat_exchanger.simulator import HeatExchangerSimulator
 from sunimuhendis.model_clients.base import BaseModelClient
 from sunimuhendis.model_clients.pricing import (
     live_price_book,
@@ -262,9 +260,14 @@ def _configure_reasoning(
 def _utcnow_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def _build_environment():
-    # Pass a default V1 score, it will be overridden in evaluate if task specifies it
-    return HeatExchangerEnv(HeatExchangerSimulator(), HeatExchangerScoreV1())
+#: Tasks written before a task named its environment are heat-exchanger tasks.
+_DEFAULT_ENVIRONMENT = "heat_exchanger"
+
+
+def _build_environment(task_params: Dict[str, Any]):
+    # The task names its environment. A score version the task names is
+    # applied by the environment at every evaluation.
+    return make_env(task_params.get("environment", _DEFAULT_ENVIRONMENT))
 
 def multi_client_factory(spec: Dict[str, Any]) -> BaseModelClient:
     provider = spec.get("provider", "hf")
@@ -370,10 +373,10 @@ def run_benchmark(
     
     task_id = task_params.get("task_id", prompt_slug)
     task_set_version = task_params.get("task_set_version", "v1")
-    used_score_version = task_params.get("score_version", "heat_exchanger_score_v1")
-    
+
     weights = {k: task_params[k] for k in _WEIGHT_KEYS if k in task_params}
-    env = _build_environment()
+    env = _build_environment(task_params)
+    used_score_version = env.get_score_function(task_params).VERSION
     total = len(model_specs) * repeats
     logger.info(f"Task '{task_id}' (Prompt '{prompt_slug}'): {len(model_specs)} models x {repeats} repeats = {total} runs.")
 
@@ -433,8 +436,9 @@ def run_benchmark(
                 "prompt_slug": prompt_slug,
                 "task_id": task_id,
                 "task_set_version": task_set_version,
+                "environment": env.name,
                 "score_version": used_score_version,
-                "simulator_version": HeatExchangerSimulator.VERSION,
+                "simulator_version": env.simulator.VERSION,
                 "timestamp": _utcnow_iso(),
                 "status": "client_error",
                 "weights": weights,

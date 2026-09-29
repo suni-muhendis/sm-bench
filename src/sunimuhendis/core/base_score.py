@@ -1,11 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Any, ClassVar, Dict, Optional
 from .types import ScoreResult
 
 class BaseScoreFunction(ABC):
     """
     Base class from which all score functions inherit.
     """
+
+    #: Identifier of this score function, e.g. ``"heat_exchanger_score_v4"``.
+    #: Stamped onto every result by ``evaluate()``.
+    VERSION: ClassVar[Optional[str]] = None
     
     @abstractmethod
     def calculate_score(
