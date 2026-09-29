@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use SM-Bench, cite the software and record the simulator and score versions used."
 title: "SM-Bench: Physics-based evaluation environments for machine-generated engineering designs"
 type: software
-version: 0.6.0
-date-released: 2026-09-21
+version: 0.7.0
+date-released: 2026-09-29
 license: Apache-2.0
 repository-code: "https://github.com/suni-muhendis/sm-bench"
 url: "https://github.com/suni-muhendis/sm-bench"

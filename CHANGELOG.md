@@ -6,6 +6,8 @@ different simulator or score versions comparable.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-29
+
 Groundwork for moving each environment into a package of its own. No
 simulator or score behavior changed: every recorded benchmark design re-scores
 identically.
@@ -50,6 +52,7 @@ identically.
   task-owned operating conditions.
 - Added live price snapshots and token/cost accounting for benchmark runs.
 
-[Unreleased]: https://github.com/suni-muhendis/sm-bench/compare/envs-v0.6.0...main
+[Unreleased]: https://github.com/suni-muhendis/sm-bench/compare/envs-v0.7.0...main
+[0.7.0]: https://github.com/suni-muhendis/sm-bench/releases/tag/envs-v0.7.0
 [0.6.0]: https://github.com/suni-muhendis/sm-bench/releases/tag/envs-v0.6.0
 [0.5.0]: https://github.com/suni-muhendis/sm-bench/releases/tag/envs-v0.5.0

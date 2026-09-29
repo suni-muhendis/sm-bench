@@ -64,7 +64,7 @@ Python 3.12 is required. Install from a release tag so simulator and scoring
 behavior cannot move underneath an experiment:
 
 ```bash
-pip install "sunimuhendis[heat_exchanger] @ git+https://github.com/suni-muhendis/sm-bench.git@envs-v0.6.0"
+pip install "sunimuhendis[heat_exchanger] @ git+https://github.com/suni-muhendis/sm-bench.git@envs-v0.7.0"
 ```
 
 ## Quick start
