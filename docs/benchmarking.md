@@ -1,8 +1,8 @@
 # Benchmarking
 
-The benchmark harness lives in this repository but is excluded from the
-`sunimuhendis` wheel. It sends a prompt to a model, parses the response, evaluates
-the design, and appends a provenance-rich record.
+The benchmark harness is this repository. It sends a prompt to a model, parses
+the response, evaluates the design with the environment the task names, and
+appends a provenance-rich record.
 
 ## Experiment tracks
 

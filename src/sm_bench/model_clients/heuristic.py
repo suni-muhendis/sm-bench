@@ -3,8 +3,8 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from sunimuhendis.model_clients.base import BaseModelClient
-from sunimuhendis.baselines.heuristic_sampler import HeuristicSampler
+from sm_bench.model_clients.base import BaseModelClient
+from sm_heat_exchanger.samplers.heuristic_sampler import HeuristicSampler
 
 class HeuristicClient(BaseModelClient):
     def __init__(self):

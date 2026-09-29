@@ -12,7 +12,7 @@ nav:
   - Home: index.md
   - Leaderboard: leaderboard.md
   - Guides:
-      - Using the library: library.md
+      - Environments: library.md
       - Running benchmarks: benchmarking.md
       - Development and releases: development.md
 

@@ -1,14 +1,10 @@
 # Development dependency set for CPython 3.12.
-# Reproducible setup: pip install -c constraints/python312.txt -r requirements.txt
-pydantic>=2.0.0
+# Reproducible setup: pip install -c constraints/python312.txt -r requirements.txt -e .
+# The evaluation environments (sm-core, sm-heat-exchanger) come from
+# pyproject.toml, pinned by tag.
 pytest>=7.0.0
-build>=1.2.0
-ht
-fluids
-CoolProp
 numpy
 scipy
-json-repair>=0.30.0
 openai>=1.0.0
 python-dotenv>=1.0.0
 streamlit

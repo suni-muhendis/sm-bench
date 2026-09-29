@@ -3,7 +3,9 @@
 ## Runtime
 
 The supported interpreter is CPython 3.12; `.python-version` pins the
-development patch release. The package declares `>=3.12,<3.13`.
+development patch release. The project declares `>=3.12,<3.13`. The
+evaluation environments (`sm-core`, `sm-heat-exchanger`) are installed from the
+tags pinned in `pyproject.toml`.
 
 Create and install the development environment on Linux or macOS:
 
@@ -29,23 +31,15 @@ is not a cross-platform, hash-locked dependency file.
 ```bash
 python -m pip check
 python -m pytest tests/ -q
-python -m build
-python scripts/check_wheel_metadata.py dist
-python scripts/check_wheel_consumer.py dist
 ```
 
-The clean consumer check creates a temporary virtual environment, installs the
-wheel with only the heat-exchanger extra, changes to a directory outside the
-repository, and exercises the public API with isolated imports.
-
-GitHub Actions runs the same test, build, metadata, and consumer checks on
-Windows and Ubuntu.
+GitHub Actions runs the same checks on Windows and Ubuntu. The environments
+carry their own physics tests and wheel checks in their repositories.
 
 ## Useful entry points
 
 | Command | Purpose |
 |---|---|
-| `python scripts/run_heat_exchanger.py` | Evaluate the sample design |
 | `python scripts/run_simulation.py` | Exercise every pipeline failure stage |
 | `python scripts/run_baseline.py` | Generate and evaluate non-model baselines |
 | `python scripts/calibrate_hard_task.py` | Audit a task's feasible design space |
@@ -68,15 +62,17 @@ python scripts/build_site_data.py
 python -m mkdocs serve
 ```
 
-## Release checklist
+## Updating an environment
 
-1. Update `CHANGELOG.md`, `pyproject.toml`, `CITATION.cff`, and public docs.
-2. Run the full verification sequence above.
-3. Confirm Windows and Ubuntu CI on the exact commit.
-4. Tag the environment release with the chosen package version, for example
-   `envs-vX.Y.Z`.
-5. Create a GitHub Release describing simulator, score, runtime, and data changes.
-6. Install the tagged wheel from a clean external environment.
+An environment change is released in its own repository with a new tag. To
+use it here:
+
+1. Bump the tag in `pyproject.toml` and reinstall.
+2. Re-score the recorded runs with the new version and check that every number
+   that should not move did not move.
+3. Update `CHANGELOG.md`, `pyproject.toml`, `CITATION.cff`, and public docs.
+4. Confirm Windows and Ubuntu CI on the exact commit, then tag SM-Bench
+   (`vX.Y.Z`).
 
 New simulator or score behavior requires a new version boundary. Historical
 result files are never rewritten to look as though they were produced by a

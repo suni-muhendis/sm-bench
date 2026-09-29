@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, Any
-from .types import EvaluationResult
+from sm_core import EvaluationResult
 
 def setup_logger(name: str, log_dir: str = "logs") -> logging.Logger:
     """Creates a basic logger."""

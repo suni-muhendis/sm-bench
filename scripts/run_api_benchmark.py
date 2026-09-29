@@ -16,19 +16,19 @@ try:
 except ImportError:
     pass
 
-from sunimuhendis import make_env
-from sunimuhendis.core.logging import setup_logger
-from sunimuhendis.model_clients.base import BaseModelClient
-from sunimuhendis.model_clients.pricing import (
+from sm_core import make_env
+from sm_bench.logging import setup_logger
+from sm_bench.model_clients.base import BaseModelClient
+from sm_bench.model_clients.pricing import (
     live_price_book,
     snapshot_from_live,
 )
-from sunimuhendis.model_clients.usage import (
+from sm_bench.model_clients.usage import (
     empty_usage,
     estimate_cost,
     price_snapshot,
 )
-from sunimuhendis.parsing.json_parser import parse_llm_json
+from sm_core import parse_llm_json
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 _WEIGHT_KEYS = ("w_heat", "w_cost", "w_drop_tube", "w_drop_shell", "w_eff")
@@ -273,13 +273,13 @@ def multi_client_factory(spec: Dict[str, Any]) -> BaseModelClient:
     provider = spec.get("provider", "hf")
     
     if provider == "opencode":
-        from sunimuhendis.model_clients.opencode_client import OpenCodeClient
+        from sm_bench.model_clients.opencode_client import OpenCodeClient
         return OpenCodeClient(model=spec["model"], name=spec.get("name"), params=spec.get("params"))
     elif provider == "openrouter":
-        from sunimuhendis.model_clients.openrouter_client import OpenRouterClient
+        from sm_bench.model_clients.openrouter_client import OpenRouterClient
         return OpenRouterClient(model=spec["model"], name=spec.get("name"), params=spec.get("params"))
     else:
-        from sunimuhendis.model_clients.hf_client import HFInferenceClient
+        from sm_bench.model_clients.hf_client import HFInferenceClient
         return HFInferenceClient(model=spec["model"], name=spec.get("name"), params=spec.get("params"))
 
 def _load_live_prices(

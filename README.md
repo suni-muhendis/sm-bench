@@ -5,84 +5,47 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-orange.svg)](#project-status)
 
-**Physics-based evaluation environments for machine-generated engineering designs.**
+**A benchmark of machine-generated engineering designs, judged by physics
+simulation.**
 
-Part of [Suni Muhendis](https://github.com/suni-muhendis). The library is
-published as the `sunimuhendis` Python package.
-
-SM-Bench turns a proposed design into structured engineering feedback and a
-normalized score. Each environment applies schema validation, design-rule checks,
-a deterministic physics simulation, and a versioned scoring function. The same
-API can be used from this repository, an optimizer, or a separate training system.
+Part of [Suni Muhendis](https://github.com/suni-muhendis). SM-Bench sends
+engineering design tasks to language models, evaluates every answer with a
+deterministic physics environment, and records the result: score, engineering
+metrics, failure stage, tokens and cost. This repository holds the benchmark
+runners, the recorded results, a Streamlit dashboard, and the
+[documentation site and leaderboard](https://suni-muhendis.github.io/sm-bench/).
 
 > **Project status:** public research software in alpha. The heat-exchanger
 > environment is available; further engineering domains are planned.
 
-## Available environments
+## Environments
 
-| Environment | Status | Install extra |
-|---|---|---|
-| `heat_exchanger` | Available; simulator V4 and versioned scores | `heat_exchanger` |
+The environments are packages of their own, built on a shared evaluation
+contract:
 
-The heat-exchanger environment supports shell-and-tube and concentric-tube
-geometries. It uses `ht` and `fluids` where suitable, with additional
-shell-side, cost, mechanical, and correlation-validity checks implemented in
-the environment.
+| Package | Provides |
+|---|---|
+| [sm-core](https://github.com/suni-muhendis/sm-core) | The evaluation contract, `make_env`, task auditing, `parse_llm_json` |
+| [sm-heat-exchanger](https://github.com/suni-muhendis/sm-heat-exchanger) | `heat_exchanger`: shell-and-tube and concentric-tube exchangers, simulator V4, scores V1–V4 |
 
-## Install
-
-Python 3.12 is required. Install from a release tag so simulator and scoring
-behavior cannot move underneath an experiment:
+To evaluate designs outside this benchmark (an optimiser, a separate training
+system), install an environment directly; it brings `sm-core` with it:
 
 ```bash
-pip install "sunimuhendis[heat_exchanger] @ git+https://github.com/suni-muhendis/sm-bench.git@envs-v0.7.0"
+pip install "sm-heat-exchanger @ git+https://github.com/suni-muhendis/sm-heat-exchanger.git@v0.8.0"
 ```
-
-The supported runtime contract is `>=3.12,<3.13`. Support for another Python
-minor version is added only after the full test suite and clean-wheel consumer
-checks pass on that version.
-
-## Quick start
 
 ```python
-from sunimuhendis import list_environments, make_env
+from sm_core import make_env
 
-print(list_environments())  # ['heat_exchanger']
-
-env = make_env(
-    "heat_exchanger",
-    score_version="heat_exchanger_score_v4",
-)
-
-task = {
-    "task_id": "example",
-    "score_version": "heat_exchanger_score_v4",
-    "target_heat_duty": 250_000.0,
-    "max_dp_tube": 5_000.0,
-    "max_dp_shell": 5_000.0,
-}
-
-design = {
-    "geometry_type": "shell_and_tube",
-    "length": 3.0,
-    "inner_tube_di": 0.016,
-    "inner_tube_do": 0.020,
-    "outer_shell_di": 0.30,
-    "number_of_tubes": 50,
-    "baffle_spacing": 0.2,
-}
-
+env = make_env("heat_exchanger")
 result = env.evaluate("example", task, "design-1", design)
-
-print(result.status)
-print(result.score.normalized_total)
-print(result.metrics)
+result.status, result.score.normalized_total, result.metrics
 ```
 
-Invalid model output is data, not an exception from the training loop.
-`evaluate()` returns `schema_error`, `drc_error`, or `simulation_error` with a
-score of `0.0`; successful simulations return a score in `[0.0, 1.0]` and the
-engineering metrics used to calculate it.
+Up to `envs-v0.7.0` the contract and the heat exchanger shipped from this
+repository as the `sunimuhendis` package. Those tags stay installable and
+produce identical scores.
 
 ## Evaluation contract
 
@@ -97,29 +60,27 @@ design (JSON) -> schema -> design-rule checks -> simulation -> score
 | Simulation | Run the versioned engineering model | `simulation_error` |
 | Score | Convert valid metrics into a benchmark score | `success` |
 
-Evaluation is deterministic within the pinned runtime and dependency profile.
-Every stored benchmark record carries the simulator and score versions that
-produced it. Results from different versions must not be pooled implicitly.
+Invalid model output is data, not an exception: it scores `0.0` with the stage
+it failed at. Every stored benchmark record carries the environment and the
+simulator and score versions that produced it; results from different versions
+are never pooled.
 
 ## Repository map
 
 | Path | Contents |
 |---|---|
-| `src/sunimuhendis/core/` | Environment-independent evaluation contracts |
-| `src/sunimuhendis/environments/` | Physics environments and registry |
-| `scripts/` | Benchmark, audit, reporting, and dashboard tools |
-| `results/` | Versioned experiment definitions and recorded runs |
-| `reports/` | Engineering audits and research evidence |
-| `tests/` | Unit, regression, packaging, and runtime tests |
-
-The wheel contains `core`, `environments`, `parsing`, and `prompts`. Benchmark
-clients, samplers, the dashboard, stored results, and research artifacts remain
-repository tools and are excluded from the wheel.
+| `scripts/` | Benchmark runners, task calibration, reporting, dashboard |
+| `src/sm_bench/` | Model clients and run logging used by the scripts |
+| `results/` | Versioned task definitions and recorded runs |
+| `reports/` | Task calibration and audit records |
+| `configs/` | Model registry and archived price lists |
+| `docs/` | Documentation site sources |
+| `tests/` | Runner, dashboard, pricing and ledger tests |
 
 ## Documentation
 
 - [Documentation site and leaderboard](https://suni-muhendis.github.io/sm-bench/)
-- [Library API and task auditing](docs/library.md)
+- [Environments and task auditing](docs/library.md)
 - [Benchmarking, cost accounting, and dashboard](docs/benchmarking.md)
 - [Development and release workflow](docs/development.md)
 - [Experiment track layout](results/EXPERIMENT_TRACKS.md)
@@ -137,8 +98,8 @@ python -m pytest tests/ -q
 ```
 
 On Windows, create the environment with `py -3.12 -m venv .venv` and activate
-it with `.venv\Scripts\Activate.ps1`. See [the development guide](docs/development.md)
-for packaging checks and the clean consumer test.
+it with `.venv\Scripts\Activate.ps1`. The environments are installed from
+their pinned tags in `pyproject.toml`.
 
 API keys are read from a git-ignored `.env`; copy `.env.example` and add only
 the providers you use.

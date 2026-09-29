@@ -2,10 +2,14 @@
 requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+# SM-Bench is the benchmark application: runners, model clients, recorded
+# results, dashboard and documentation site. The environments it evaluates
+# with are separate packages, pinned here by tag; SM-Bench itself is not a
+# library for other projects to install.
 [project]
-name = "sunimuhendis"
-version = "0.7.0"
-description = "Physics-simulation evaluation environments (DRC + simulator + score) for engineering-design LLM benchmarking."
+name = "sm-bench"
+version = "0.8.0"
+description = "Benchmark of machine-generated engineering designs, judged by physics simulation."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
@@ -23,10 +27,20 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
 ]
+# Pin tags, not branches: simulator and score behaviour is versioned deliberately.
 dependencies = [
-    "pydantic>=2.0.0",
-    "json-repair>=0.30.0",
+    "sm-core @ git+https://github.com/suni-muhendis/sm-core.git@v0.8.0",
+    "sm-heat-exchanger[samplers] @ git+https://github.com/suni-muhendis/sm-heat-exchanger.git@v0.8.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "streamlit",
+    "pandas",
+    "plotly",
+    "numpy",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/suni-muhendis/sm-bench"
@@ -34,32 +48,6 @@ Repository = "https://github.com/suni-muhendis/sm-bench.git"
 Issues = "https://github.com/suni-muhendis/sm-bench/issues"
 Changelog = "https://github.com/suni-muhendis/sm-bench/blob/main/CHANGELOG.md"
 
-# Environments are found by name through this entry-point group, so a package
-# that provides a new environment registers it here in its own pyproject.
-[project.entry-points."sunimuhendis.environments"]
-heat_exchanger = "sunimuhendis.environments.heat_exchanger:make_env"
-
-# Per-environment extras: install only the simulator deps you actually use,
-# e.g.  pip install "sunimuhendis[heat_exchanger] @ git+https://github.com/suni-muhendis/sm-bench.git@envs-v0.7.0"
-# Pin a tag, not a branch: simulator and score behaviour is versioned deliberately.
-[project.optional-dependencies]
-heat_exchanger = ["ht", "fluids"]
-all = ["ht", "fluids"]
-# The benchmark harness (model clients, dashboard, samplers) is NOT part of the
-# shipped library; these deps are only for running this repo's own benchmark app.
-benchmark = ["openai>=1.0.0", "python-dotenv>=1.0.0", "streamlit", "pandas", "plotly", "scipy", "numpy"]
-dev = ["pytest>=7.0.0"]
-
-# src-layout: only the sunimuhendis library ships. The harness subpackages live
-# in-tree for the benchmark app but are excluded from the distributed wheel, so a
-# consumer that installs sunimuhendis pulls core + environments + parsing + prompts.
-# `prompts` ships (unlike model_clients/baselines) so a separate consumer can build
-# the exact same prompt used for benchmarking, keeping designs generated elsewhere
-# comparable with the results published here.
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["sunimuhendis*"]
-exclude = [
-    "sunimuhendis.model_clients*",
-    "sunimuhendis.baselines*",
-]
+include = ["sm_bench*"]

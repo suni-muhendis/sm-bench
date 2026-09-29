@@ -2,7 +2,7 @@ import os
 import time
 from typing import Any, Dict, Optional
 
-from sunimuhendis.model_clients.base import BaseModelClient
+from sm_bench.model_clients.base import BaseModelClient
 
 OPENCODE_BASE_URL = "https://opencode.ai/zen/go/v1"
 

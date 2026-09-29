@@ -1,4 +1,4 @@
-from sunimuhendis.model_clients.base import BaseModelClient
+from sm_bench.model_clients.base import BaseModelClient
 
 class InteractiveBrowserClient(BaseModelClient):
     def __init__(self):

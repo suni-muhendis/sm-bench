@@ -6,10 +6,10 @@ import numpy as np
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sunimuhendis.environments.heat_exchanger.simulator import HeatExchangerSimulator
-from sunimuhendis.environments.heat_exchanger.score import HeatExchangerScoreV1, HeatExchangerScoreV2
-from sunimuhendis.environments.heat_exchanger.env import HeatExchangerEnv
-from sunimuhendis.baselines.random_sampler import RandomSampler
+from sm_heat_exchanger.simulator import HeatExchangerSimulator
+from sm_heat_exchanger.score import HeatExchangerScoreV1, HeatExchangerScoreV2
+from sm_heat_exchanger.env import HeatExchangerEnv
+from sm_heat_exchanger.samplers.random_sampler import RandomSampler
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze score distribution between V1 and V2.")

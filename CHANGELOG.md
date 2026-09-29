@@ -6,6 +6,30 @@ different simulator or score versions comparable.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-29
+
+SM-Bench is now the benchmark application only. The evaluation contract and
+the heat-exchanger environment moved, with their history, into packages of
+their own, which this repository installs by tag. Every recorded design
+re-scores identically.
+
+### Changed
+
+- The evaluation contract is [sm-core](https://github.com/suni-muhendis/sm-core)
+  (`sm_core`) and the heat exchanger is
+  [sm-heat-exchanger](https://github.com/suni-muhendis/sm-heat-exchanger)
+  (`sm_heat_exchanger`), both at `v0.8.0`. Install those to evaluate designs
+  outside the benchmark.
+- The harness package is `sm_bench` (model clients and run logging); scripts
+  use `sm_core.make_env` and `sm_core.parse_llm_json`.
+- Physics, score and contract tests moved with the code; the tests here cover
+  the runners, dashboard, pricing and token ledger.
+
+### Removed
+
+- The `sunimuhendis` package, its wheel and the wheel checks. Tags up to
+  `envs-v0.7.0` still install it.
+
 ## [0.7.0] - 2026-09-29
 
 Groundwork for moving each environment into a package of its own. No
@@ -52,7 +76,8 @@ identically.
   task-owned operating conditions.
 - Added live price snapshots and token/cost accounting for benchmark runs.
 
-[Unreleased]: https://github.com/suni-muhendis/sm-bench/compare/envs-v0.7.0...main
+[Unreleased]: https://github.com/suni-muhendis/sm-bench/compare/v0.8.0...main
+[0.8.0]: https://github.com/suni-muhendis/sm-bench/releases/tag/v0.8.0
 [0.7.0]: https://github.com/suni-muhendis/sm-bench/releases/tag/envs-v0.7.0
 [0.6.0]: https://github.com/suni-muhendis/sm-bench/releases/tag/envs-v0.6.0
 [0.5.0]: https://github.com/suni-muhendis/sm-bench/releases/tag/envs-v0.5.0

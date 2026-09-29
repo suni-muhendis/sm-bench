@@ -2,7 +2,7 @@ import os
 import pytest
 from unittest.mock import MagicMock, patch
 
-from sunimuhendis.model_clients.openrouter_client import OpenRouterClient
+from sm_bench.model_clients.openrouter_client import OpenRouterClient
 from scripts.sync_openrouter import (
     build_model_metadata,
     prune_openrouter_models,

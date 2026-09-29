@@ -6,11 +6,11 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sunimuhendis import make_env
-from sunimuhendis.parsing.json_parser import parse_llm_json
-from sunimuhendis.model_clients.dummy_random import DummyRandomClient
-from sunimuhendis.model_clients.interactive_browser import InteractiveBrowserClient
-from sunimuhendis.core.logging import setup_logger
+from sm_core import make_env
+from sm_core import parse_llm_json
+from sm_bench.model_clients.dummy_random import DummyRandomClient
+from sm_bench.model_clients.interactive_browser import InteractiveBrowserClient
+from sm_bench.logging import setup_logger
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate LLM responses")

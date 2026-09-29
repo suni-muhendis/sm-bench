@@ -3,7 +3,7 @@ import json
 import pytest
 
 from scripts.token_ledger import live_price_book, resolve_price_book
-from sunimuhendis.model_clients.pricing import (
+from sm_bench.model_clients.pricing import (
     fetch_openrouter_prices,
     live_price_book as fetch_live_book,
     parse_price_payload,

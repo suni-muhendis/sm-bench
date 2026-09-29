@@ -6,13 +6,13 @@ import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sunimuhendis.environments.heat_exchanger.env import HeatExchangerEnv
-from sunimuhendis.environments.heat_exchanger.simulator import HeatExchangerSimulator
-from sunimuhendis.environments.heat_exchanger.score import HeatExchangerScore
-from sunimuhendis.baselines.random_sampler import RandomSampler
-from sunimuhendis.baselines.heuristic_sampler import HeuristicSampler
-from sunimuhendis.baselines.latin_hypercube_sampler import LatinHypercubeSampler
-from sunimuhendis.core.logging import setup_logger
+from sm_heat_exchanger.env import HeatExchangerEnv
+from sm_heat_exchanger.simulator import HeatExchangerSimulator
+from sm_heat_exchanger.score import HeatExchangerScore
+from sm_heat_exchanger.samplers.random_sampler import RandomSampler
+from sm_heat_exchanger.samplers.heuristic_sampler import HeuristicSampler
+from sm_heat_exchanger.samplers.latin_hypercube_sampler import LatinHypercubeSampler
+from sm_bench.logging import setup_logger
 
 def main():
     logger = setup_logger("baseline_runner")

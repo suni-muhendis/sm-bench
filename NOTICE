@@ -13,15 +13,9 @@ separately. See results/LICENSE.md.
 
 Third-party components
 ----------------------
-The distributed Python package declares the following core and environment
-dependencies, each governed by its own upstream license. Their source trees
-are not copied into the sunimuhendis wheel:
-
-  ht           - MIT License
-  fluids       - BSD License
-  pydantic     - MIT License
-  json-repair  - MIT License
-
-Repository-only benchmark and development tools use further dependencies listed
-in pyproject.toml and requirements.txt. This summary is not a substitute for the
+SM-Bench evaluates designs with the project's own sm-core and
+sm-heat-exchanger packages (Apache License 2.0), whose NOTICE files list their
+third-party dependencies. The benchmark application uses further dependencies
+listed in pyproject.toml and requirements.txt, each governed by its own
+upstream license. This summary is not a substitute for the
 license material included with each installed distribution.

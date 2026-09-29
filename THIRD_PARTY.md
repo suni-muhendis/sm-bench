@@ -5,17 +5,19 @@ software, model output, and research inputs. It is an engineering provenance
 record, not a replacement for the license terms supplied by each upstream
 project.
 
-## Distributed Python package
+## Software dependencies
 
-The `sunimuhendis` wheel contains project-authored modules under
-`src/sunimuhendis/` and the `LICENSE` and `NOTICE` files. It declares
-third-party dependencies but does not copy their source trees into the wheel.
+SM-Bench is an application, not a distributed package. It installs the
+project's own evaluation packages, `sm-core` and `sm-heat-exchanger`
+(Apache-2.0), from their release tags; their third-party dependencies
+(`pydantic`, `json-repair`, `ht`, `fluids`, `scipy`) are documented in
+their own repositories. The benchmark application uses further dependencies
+listed in `pyproject.toml` and `requirements.txt`. The authoritative license
+for each dependency is the license included with its installed distribution
+or upstream source.
 
-The core package depends on `pydantic` and `json-repair`. The
-`heat_exchanger` extra adds `ht` and `fluids`. The benchmark application
-uses additional dependencies listed in `pyproject.toml` and
-`requirements.txt`. The authoritative license for each dependency is the
-license included with its installed distribution or upstream source.
+Releases up to `envs-v0.7.0` shipped the `sunimuhendis` wheel from this
+repository, containing project-authored modules only.
 
 ## Third-party model responses
 

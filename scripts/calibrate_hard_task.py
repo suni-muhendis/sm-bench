@@ -4,9 +4,9 @@ import json
 import random
 from pathlib import Path
 
-from sunimuhendis import make_env
-from sunimuhendis.environments.heat_exchanger.geometry import bundle_diameter
-from sunimuhendis.environments.heat_exchanger.simulator import HeatExchangerSimulator
+from sm_core import make_env
+from sm_heat_exchanger.geometry import bundle_diameter
+from sm_heat_exchanger.simulator import HeatExchangerSimulator
 
 
 def main():

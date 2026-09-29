@@ -8,7 +8,7 @@ from scripts.token_ledger import (
     summarize,
     usage_row,
 )
-from sunimuhendis.model_clients.usage import (
+from sm_bench.model_clients.usage import (
     estimate_cost,
     extract_usage,
     price_snapshot,

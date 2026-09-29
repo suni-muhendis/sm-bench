@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sunimuhendis import make_env
+from sm_core import make_env
 
 def main():
     parser = argparse.ArgumentParser(description="Rescore existing benchmark results using a new score version.")

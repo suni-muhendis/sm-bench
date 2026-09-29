@@ -28,9 +28,3 @@ jobs:
         run: python -m pip check
       - name: Run tests
         run: python -m pytest tests/ -q
-      - name: Build wheel and source distribution
-        run: python -m build
-      - name: Validate wheel boundary and runtime metadata
-        run: python scripts/check_wheel_metadata.py dist
-      - name: Smoke-test wheel in a clean consumer environment
-        run: python scripts/check_wheel_consumer.py dist

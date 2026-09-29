@@ -13,8 +13,10 @@ checks, a deterministic physics simulation, and a versioned scoring function,
 so a language model, an optimizer, or a training system can all be judged by
 the same referee.
 
-SM-Bench is part of [Suni Muhendis](https://github.com/suni-muhendis) and is
-published as the `sunimuhendis` Python package.
+SM-Bench is part of [Suni Muhendis](https://github.com/suni-muhendis). Its
+environments are packages of their own:
+[sm-core](https://github.com/suni-muhendis/sm-core) holds the shared
+evaluation contract and each engineering domain builds on it.
 
 <div class="grid cards" markdown>
 
@@ -27,14 +29,14 @@ published as the `sunimuhendis` Python package.
 
     [See the results](leaderboard.md)
 
--   **Use the library**
+-   **Use an environment**
 
     ---
 
     Install an environment, evaluate designs, and audit a task before running
     any model against it.
 
-    [Library guide](library.md)
+    [Environments guide](library.md)
 
 -   **Run a benchmark**
 
@@ -49,9 +51,9 @@ published as the `sunimuhendis` Python package.
 
 ## Available environments
 
-| Environment | Status | Install extra |
+| Environment | Status | Package |
 |---|---|---|
-| `heat_exchanger` | Available; simulator V4 and versioned scores | `heat_exchanger` |
+| `heat_exchanger` | Available; simulator V4 and versioned scores | [sm-heat-exchanger](https://github.com/suni-muhendis/sm-heat-exchanger) |
 
 The heat-exchanger environment supports shell-and-tube and concentric-tube
 geometries. It uses `ht` and `fluids` where suitable, with additional
@@ -64,13 +66,16 @@ Python 3.12 is required. Install from a release tag so simulator and scoring
 behavior cannot move underneath an experiment:
 
 ```bash
-pip install "sunimuhendis[heat_exchanger] @ git+https://github.com/suni-muhendis/sm-bench.git@envs-v0.7.0"
+pip install "sm-heat-exchanger @ git+https://github.com/suni-muhendis/sm-heat-exchanger.git@v0.8.0"
 ```
+
+The environment brings `sm-core` with it. Up to `envs-v0.7.0` both shipped
+from SM-Bench as the `sunimuhendis` package; those tags stay installable.
 
 ## Quick start
 
 ```python
-from sunimuhendis import make_env
+from sm_core import make_env
 
 env = make_env("heat_exchanger", score_version="heat_exchanger_score_v4")
 
@@ -115,8 +120,9 @@ design (JSON) -> schema -> design-rule checks -> simulation -> score
 | Score | Convert valid metrics into a benchmark score | `success` |
 
 Evaluation is deterministic within the pinned runtime and dependency profile.
-Every stored benchmark record carries the simulator and score versions that
-produced it, and results from different versions are never pooled.
+Every stored benchmark record carries the environment and the simulator and
+score versions that produced it, and results from different versions are never
+pooled.
 
 ## License and citation
 

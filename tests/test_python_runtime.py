@@ -2,7 +2,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from sunimuhendis import __version__
+from sm_bench import __version__
 
 
 ROOT = Path(__file__).resolve().parents[1]

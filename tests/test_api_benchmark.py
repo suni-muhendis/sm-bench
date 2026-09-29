@@ -16,10 +16,10 @@ from scripts.run_api_benchmark import (
     _select_models,
     run_benchmark,
 )
-from sunimuhendis.model_clients.dummy_random import DummyRandomClient
-from sunimuhendis.model_clients.hf_client import HFInferenceClient
-from sunimuhendis.model_clients.opencode_client import OpenCodeClient
-from sunimuhendis.model_clients.openrouter_client import OpenRouterClient
+from sm_bench.model_clients.dummy_random import DummyRandomClient
+from sm_bench.model_clients.hf_client import HFInferenceClient
+from sm_bench.model_clients.opencode_client import OpenCodeClient
+from sm_bench.model_clients.openrouter_client import OpenRouterClient
 
 @pytest.fixture(autouse=True)
 def _isolate_repo_root(tmp_path, monkeypatch):

@@ -201,7 +201,7 @@ def live_price_book(fetcher=None) -> Dict[str, Any]:
     This is what "what would it cost now" should mean: the rate the provider is
     charging at the moment of the report, not the rate of the last local sync.
     """
-    from sunimuhendis.model_clients import pricing
+    from sm_bench.model_clients import pricing
 
     book = pricing.live_price_book(fetcher)
     prices = dict(book.get("prices") or {})
