@@ -41,7 +41,7 @@ def main():
         raise RuntimeError("Unexpected wheel version: {}".format(metadata["Version"]))
     if not any(name.startswith("sunimuhendis/prompts/") for name in files):
         raise RuntimeError("Public prompt package is missing")
-    forbidden = ("sunimuhendis/model_clients/", "sunimuhendis/baselines/", "turbodesign/")
+    forbidden = ("sunimuhendis/model_clients/", "sunimuhendis/baselines/")
     leaked = [name for name in files if name.startswith(forbidden)]
     if leaked:
         raise RuntimeError("Wheel contains excluded packages: {}".format(leaked))

@@ -58,14 +58,6 @@ rapor/
 # Project Docs (Local Only)
 Master_Plan.md
 
-# Turbomachinery throughflow research (local only, not published)
-reports/throughflow_phase_0_2/
-reports/turbomachinery_throughflow_implementation_plan.md
-reports/python312_migration.md
-scripts/throughflow_research/
-tests/test_throughflow_research.py
-docs/throughflow.md
-
 # Personal notes and scratch scripts (local only, not published)
 DEPLOYMENT.md
 reports/LLM_Benchmark_Template.md

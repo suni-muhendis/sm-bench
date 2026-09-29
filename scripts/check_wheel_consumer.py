@@ -48,7 +48,6 @@ result = make_env("heat_exchanger").evaluate(
     "wheel-smoke", payload["task"], "sample", payload["design"]
 )
 assert result.status == "success", result
-assert "turbodesign" not in sys.modules
 import_path = Path(sunimuhendis.__file__).resolve()
 environment_root = Path(sys.prefix).resolve()
 assert import_path.is_relative_to(environment_root), (
