@@ -4,7 +4,11 @@ hide:
   - toc
 ---
 
-# Leaderboard
+<p class="sm-eyebrow">The benchmark / Recorded results</p>
+
+# Engineering performance, measured.
+
+<p class="sm-lb-intro">Explore how language models turn a single prompt into a complete engineering design. Compare performance within a task, then inspect the constraints and evaluation stages behind the score.</p>
 
 Each model receives a task's prompt once per run and has to answer with a
 complete heat-exchanger design in a single attempt, with no feedback. Every
@@ -15,8 +19,10 @@ Tasks are ranked separately. Each task pins its own simulator and score
 version, so a score from one task cannot be compared with a score from another.
 
 <div id="sm-leaderboard" data-src="../data/leaderboard.json" markdown="0">
-  <p class="sm-lb-status">Loading results…</p>
+  <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
+
+<noscript>Enable JavaScript to explore the interactive table. The recorded runs are also available in the <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results">results repository</a>.</noscript>
 
 ## Reading the table
 

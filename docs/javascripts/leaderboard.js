@@ -36,11 +36,14 @@
   }
 
   function renderTable(task, state) {
-    const rows = [...task.leaderboard];
+    const query = state.query.trim().toLowerCase();
+    const rows = task.leaderboard.filter((row) =>
+      [row.model, row.model_id, row.provider].some((value) => String(value || "").toLowerCase().includes(query)));
     if (state.sort) {
       const { key, dir } = state.sort;
       rows.sort((a, b) => {
         const av = a[key], bv = b[key];
+        if (av == null && bv == null) return 0;
         if (av === null || av === undefined) return 1;
         if (bv === null || bv === undefined) return -1;
         return dir * (av - bv);
@@ -50,9 +53,9 @@
     const head = COLUMNS.map((c) => {
       const active = state.sort && state.sort.key === c.key;
       const arrow = active ? (state.sort.dir < 0 ? " ↓" : " ↑") : "";
-      return `<th class="sm-lb-num"><button type="button" data-sort="${c.key}"${active ? ' aria-sort="' + (state.sort.dir < 0 ? "descending" : "ascending") + '"' : ""}>${c.label}${arrow}</button></th>`;
+      return `<th scope="col" class="sm-lb-num" aria-sort="${active ? (state.sort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${c.key}">${c.label}${arrow}</button></th>`;
     }).join("");
-    const body = rows.map((row, i) => {
+    const body = rows.map((row) => {
       const cells = COLUMNS.map((c) => {
         if (c.kind === "score") {
           const width = row.mean_score ? (100 * row.mean_score) / max : 0;
@@ -60,9 +63,10 @@
         }
         return `<td class="sm-lb-num">${fmt(row[c.key], c.kind)}</td>`;
       }).join("");
-      return `<tr><td class="sm-lb-rank">${state.sort ? "" : i + 1}</td><td>${modelCell(row)}</td>${cells}</tr>`;
+      return `<tr><td class="sm-lb-rank">${task.leaderboard.indexOf(row) + 1}</td><td>${modelCell(row)}</td>${cells}</tr>`;
     }).join("");
-    return `<div class="sm-lb-scroll"><table class="sm-lb-table"><thead><tr><th class="sm-lb-rank">#</th><th>Model</th>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+    return `<p class="sm-lb-count" role="status">Showing ${rows.length} of ${task.leaderboard.length} models · Rank follows the original score order. Select a column to sort.</p>` +
+      `<div class="sm-lb-scroll" tabindex="0" role="region" aria-label="Model results; scroll horizontally for more columns"><table class="sm-lb-table"><caption class="sm-sr-only">${esc(task.title)} model results</caption><thead><tr><th scope="col" class="sm-lb-rank">#</th><th scope="col">Model</th>${head}</tr></thead><tbody>${body || '<tr><td colspan="9" class="sm-lb-empty">No models match your search. Try another name or provider.</td></tr>'}</tbody></table></div>`;
   }
 
   function renderFunnel(task) {
@@ -94,7 +98,8 @@
     return `<h2 class="sm-lb-title">${esc(task.title)}</h2>` +
       `<p class="sm-lb-slug"><code>${esc(task.slug)}</code> · <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results/${encodeURIComponent(task.trackId)}/${encodeURIComponent(task.slug)}">task files</a></p>` +
       `<dl class="sm-lb-facts">${facts}</dl>` +
-      renderTable(task, state) +
+      `<div class="sm-lb-toolbar"><label for="sm-lb-search">Find a model<input id="sm-lb-search" type="search" placeholder="Model name or provider…" value="${esc(state.query)}" autocomplete="off"></label></div>` +
+      `<div class="sm-lb-results">${renderTable(task, state)}</div>` +
       `<h3>Where attempts stop</h3>` + renderFunnel(task);
   }
 
@@ -104,8 +109,9 @@
       root.innerHTML = '<p class="sm-lb-status">No recorded runs yet.</p>';
       return;
     }
-    const state = { slug: tasks[0].slug, sort: null };
-    const fromHash = decodeURIComponent(location.hash.slice(1));
+    const state = { slug: tasks[0].slug, sort: null, query: "" };
+    let fromHash = "";
+    try { fromHash = decodeURIComponent(location.hash.slice(1)); } catch (_) { /* Ignore malformed links. */ }
     if (tasks.some((t) => t.slug === fromHash)) state.slug = fromHash;
 
     const options = tasks.map((t) =>
@@ -123,8 +129,14 @@
     select.addEventListener("change", () => {
       state.slug = select.value;
       state.sort = null;
+      state.query = "";
       history.replaceState(null, "", "#" + encodeURIComponent(state.slug));
       draw();
+    });
+    body.addEventListener("input", (event) => {
+      if (event.target.id !== "sm-lb-search") return;
+      state.query = event.target.value;
+      body.querySelector(".sm-lb-results").innerHTML = renderTable(tasks.find((t) => t.slug === state.slug), state);
     });
     body.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-sort]");
@@ -133,7 +145,8 @@
       state.sort = state.sort && state.sort.key === key
         ? (state.sort.dir < 0 ? { key, dir: 1 } : null)
         : { key, dir: -1 };
-      draw();
+      body.querySelector(".sm-lb-results").innerHTML = renderTable(tasks.find((t) => t.slug === state.slug), state);
+      body.querySelector(`button[data-sort="${key}"]`).focus({ preventScroll: true });
     });
     draw();
   }
@@ -148,8 +161,8 @@
       })
       .then((data) => mount(root, data))
       .catch(() => {
-        root.innerHTML = '<p class="sm-lb-status">The results could not be loaded. ' +
-          'Build them with <code>python scripts/build_site_data.py</code> before serving the site.</p>';
+        root.innerHTML = '<p class="sm-lb-status" role="alert">The results could not be loaded. ' +
+          'Please reload the page or <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results">browse the recorded runs on GitHub</a>.</p>';
       });
   }
 
