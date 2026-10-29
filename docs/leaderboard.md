@@ -18,7 +18,7 @@ stages as any other design.
 Tasks are ranked separately. Each task pins its own simulator and score
 version, so a score from one task cannot be compared with a score from another.
 
-<div id="sm-leaderboard" data-src="../data/leaderboard.json" markdown="0">
+<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261029-charts1" markdown="0">
   <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
 
