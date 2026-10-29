@@ -54,9 +54,9 @@ hooks:
   - scripts/mkdocs_hooks.py
 
 extra_css:
-  - stylesheets/extra.css
+  - stylesheets/extra.css?v=20261029
 extra_javascript:
-  - javascripts/leaderboard.js
+  - javascripts/leaderboard.js?v=20261029
 
 markdown_extensions:
   - admonition
