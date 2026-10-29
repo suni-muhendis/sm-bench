@@ -126,7 +126,7 @@
   .md-typeset .sm-hero h1 { font-size: 2.6rem; }
   .sm-pipeline { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 40em) {
+@media (max-width: 48em) {
   .sm-hero { grid-template-columns: 1fr; padding: 1rem 0 2rem; }
   .md-typeset .sm-hero h1 { font-size: 2.1rem; }
   .sm-blueprint { max-width: 30rem; }
