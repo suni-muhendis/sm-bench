@@ -224,3 +224,46 @@
   .sm-lb-stage { grid-template-columns: 5.5rem 1fr 4rem; }
   .sm-lb-built { margin-left: 0; width: 100%; }
 }
+
+/* Task-scoped charts use SVG so themes, keyboard inspection and exports work
+   without an external chart service or runtime dependency. */
+.sm-charts { margin: 1.5rem 0 2rem; padding: 1.2rem; border: 1px solid var(--sm-line); background: var(--sm-surface); border-radius: .5rem; }
+.md-typeset .sm-chart-heading h3 { margin: .2rem 0 1rem; font-size: 1.3rem; }
+.md-typeset .sm-chart-heading .sm-eyebrow { margin-bottom: .4rem; overflow-wrap: anywhere; }
+.sm-chart-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem; }
+.sm-chart-controls label { display: flex; flex-direction: column; gap: .3rem; font-size: .7rem; font-weight: 600; }
+.sm-chart-controls [hidden] { display: none; }
+.sm-chart-controls select, .sm-charts button { padding: .45rem .65rem; border: 1px solid var(--sm-line); border-radius: .25rem; background: var(--md-default-bg-color); color: var(--sm-heading); font: inherit; font-size: .7rem; }
+.sm-charts button { cursor: pointer; }
+.sm-charts button:hover { border-color: var(--sm-accent); }
+.sm-charts button:disabled { cursor: default; opacity: .45; }
+.sm-chart-models { margin: 1rem 0; padding: .6rem .8rem; border: 1px solid var(--sm-line); border-radius: .25rem; font-size: .7rem; }
+.sm-chart-models summary, .sm-chart-data summary { cursor: pointer; font-weight: 600; }
+.md-typeset details.sm-chart-models, .md-typeset details.sm-chart-data { border: 1px solid var(--sm-line); box-shadow: none; padding: 0 .8rem; }
+.md-typeset :is(.sm-chart-models, .sm-chart-data) > summary { padding: .65rem 1.5rem .65rem .8rem; margin: 0 -.8rem; background: var(--sm-soft); color: var(--sm-heading); }
+.md-typeset :is(.sm-chart-models, .sm-chart-data) > summary::before { display: none; }
+.sm-chart-models fieldset { margin-bottom: .8rem; }
+.sm-chart-selection { display: flex; gap: .5rem; margin: .7rem 0; }
+.sm-chart-models fieldset { border: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,16rem),1fr)); gap: .6rem; }
+.sm-chart-models label { display: flex; align-items: start; gap: .4rem; overflow-wrap: anywhere; }
+.sm-chart-models input { margin-top: .2rem; accent-color: var(--sm-accent); }
+.sm-chart-note { font-size: .72rem; color: var(--md-default-fg-color--light); }
+.sm-chart-scroll { overflow-x: auto; margin: 1rem 0; }
+.sm-chart-scroll svg { width: 100%; min-width: 750px; height: auto; display: block; }
+.sm-chart-scroll svg > rect { fill: var(--sm-surface); }
+.sm-chart-scroll svg text { fill: var(--md-default-fg-color); font-family: "IBM Plex Sans", sans-serif; }
+.sm-chart-scroll .sm-chart-small { fill: var(--md-default-fg-color--light); }
+.sm-chart-mark { cursor: crosshair; }
+.sm-chart-mark:focus { outline: 2px solid var(--sm-accent); outline-offset: 3px; }
+.sm-chart-mark:hover > rect, .sm-chart-mark:focus > rect { opacity: .8; }
+.sm-chart-legend { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .8rem 0; font-size: .62rem; }
+.sm-chart-legend > span { display: inline-flex; align-items: center; gap: .35rem; overflow-wrap: anywhere; max-width: 100%; }
+.sm-chart-legend i { width: .5rem; height: .5rem; border-radius: .1rem; flex-shrink: 0; }
+.sm-chart-data { font-size: .7rem; }
+.sm-chart-data .sm-lb-scroll { margin-top: .7rem; }
+.sm-chart-tooltip { margin: .9rem 0 0; padding: .7rem; min-height: 3rem; border-radius: .25rem; background: var(--sm-soft); font-size: .7rem; overflow-wrap: anywhere; }
+@media (max-width: 48em) {
+  .sm-charts { padding: .75rem; }
+  .sm-chart-controls label { width: 100%; }
+  .sm-chart-controls select { max-width: 100%; }
+}

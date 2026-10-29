@@ -39,3 +39,28 @@ The numbers are computed from the run records under
 Benchmark data is licensed under [CC BY 4.0](../results/LICENSE.md). For
 individual runs, raw responses, and cost breakdowns, use the
 [Streamlit dashboard](benchmarking.md) in the repository.
+
+## Exploring the charts
+
+Select a task, then choose a chart and the model configurations to compare.
+Model selection applies to the charts; the search field below filters the
+detailed table independently. Switching tasks resets the chart selection.
+Hover over a mark or focus it with the keyboard to inspect its values. Use
+**View chart data** for an accessible numeric table or **Download SVG** to
+save the selected chart.
+
+- **Score comparison:** mean and best score on a fixed 0–1 scale.
+- **Validity & requirements:** simulated designs and designs meeting all
+  requirements, both as percentages of all recorded attempts.
+- **Score distribution:** inclusive quartiles and median, with whiskers at
+  the minimum and maximum. Failed designs count as zero; client errors and
+  token-limit stops are excluded. These are summaries, not individual runs.
+- **Cost & speed:** mean score against average recorded cost per run or
+  median latency. Cost comparisons omit models with any unpriced runs;
+  latency uses positive recorded measurements only.
+- **Run outcomes:** each model's recorded attempts, broken down by status.
+  A completed simulation does not necessarily meet the task requirements.
+
+Charts show recorded samples, not confidence intervals or claims of statistical
+significance. Compare run counts alongside scores. All views stay within the
+selected task and use the same versioned results as the table.

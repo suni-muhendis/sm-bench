@@ -166,6 +166,17 @@ def _task_title(task_dir: Path) -> str:
     return task_dir.name
 
 
+def _distribution(values: List[float]) -> Optional[Dict[str, Any]]:
+    """Five-number summary; inclusive linear quartiles, whiskers at min/max."""
+    if not values:
+        return None
+    quartiles = statistics.quantiles(values, n=4, method="inclusive") if len(values) > 1 else values * 3
+    return dict(zip(
+        ("min", "q1", "median", "q3", "max", "count"),
+        [*[_round(v) for v in (min(values), *quartiles, max(values))], len(values)],
+    ))
+
+
 def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any]) -> List[Dict[str, Any]]:
     by_model: Dict[str, List[Dict[str, Any]]] = {}
     for record in records:
@@ -205,6 +216,17 @@ def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any]) -> List[Di
             "p50_latency_s": _round(_median(latencies), 2),
             "mean_output_tokens": _round(_mean(outputs), 0),
             "cost_usd": _round(sum(costs), 4) if costs else None,
+            "charts": {
+                "score_distribution": _distribution(scored),
+                "latency_distribution": _distribution(latencies),
+                "priced_runs": len(costs),
+                # A partial cost ledger is not comparable with a complete one.
+                "mean_cost_usd": _round(_mean(costs), 6) if len(costs) == attempts else None,
+                "statuses": {
+                    status: sum(str(r.get("status") or "unknown") == status for r in group)
+                    for status in sorted({str(r.get("status") or "unknown") for r in group})
+                },
+            },
         })
 
     rows.sort(key=lambda row: (

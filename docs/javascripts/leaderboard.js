@@ -98,6 +98,8 @@
     return `<h2 class="sm-lb-title">${esc(task.title)}</h2>` +
       `<p class="sm-lb-slug"><code>${esc(task.slug)}</code> · <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results/${encodeURIComponent(task.trackId)}/${encodeURIComponent(task.slug)}">task files</a></p>` +
       `<dl class="sm-lb-facts">${facts}</dl>` +
+      `<section class="sm-charts" aria-label="Interactive model comparisons"></section>` +
+      `<h3>Detailed results</h3>` +
       `<div class="sm-lb-toolbar"><label for="sm-lb-search">Find a model<input id="sm-lb-search" type="search" placeholder="Model name or provider…" value="${esc(state.query)}" autocomplete="off"></label></div>` +
       `<div class="sm-lb-results">${renderTable(task, state)}</div>` +
       `<h3>Where attempts stop</h3>` + renderFunnel(task);
@@ -124,7 +126,9 @@
 
     const draw = () => {
       select.value = state.slug;
-      body.innerHTML = renderTask(tasks.find((t) => t.slug === state.slug), state);
+      const task = tasks.find((t) => t.slug === state.slug);
+      body.innerHTML = renderTask(task, state);
+      if (window.SMBenchCharts) window.SMBenchCharts.mount(body.querySelector(".sm-charts"), task);
     };
     select.addEventListener("change", () => {
       state.slug = select.value;
