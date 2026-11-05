@@ -58,6 +58,37 @@ hide:
 
 <section class="sm-section" markdown>
 
+<p class="sm-eyebrow">About the project</p>
+
+## Can a language model design real engineering hardware?
+
+Language models write fluent answers about engineering. Whether those answers
+hold up physically is another question. **Suni Muhendis** builds the tools to
+answer it: deterministic physics environments that take a design as JSON and
+judge it, and **SM-Bench**, a public benchmark that records how models perform
+against them.
+
+Every environment works the same way. A model receives a design task, with the
+operating conditions and requirements, and answers with a complete design. The
+environment checks its structure, rejects impossible geometry, simulates the
+physics, and turns the result into a score between 0 and 1: zero for a design
+that fails, a gated score for one that meets the requirements, and more for one
+that meets them efficiently. The same referee, at the same pinned version,
+judges every model, so results are reproducible and comparable.
+
+The project grows one engineering domain at a time. The heat exchanger is the
+first environment; turbomachinery and rotordynamics are next.
+
+<div class="sm-about-grid">
+<div><strong>Open referees</strong><span>Each environment is an Apache-2.0 package with its schema, design rules, simulator and score, released by tag.</span></div>
+<div><strong>Versioned results</strong><span>Every record carries its environment, simulator and score version. Results from different versions are never pooled.</span></div>
+<div><strong>Our own models</strong><span><a href="https://huggingface.co/SM-AI/SM_heat_exchanger_v1">SM_heat_exchanger_v1</a>, a fine-tuned 7B model, is benchmarked on tasks it never saw, next to frontier models.</span></div>
+</div>
+
+</section>
+
+<section class="sm-section" markdown>
+
 <p class="sm-eyebrow">The evaluation protocol</p>
 
 ## From a proposed design to an engineering result.
@@ -98,6 +129,25 @@ hydraulic, mechanical, and cost requirements. The environment uses `ht` and
 <div><dt>Geometries</dt><dd>Shell-and-tube / Concentric-tube</dd></div>
 <div><dt>Evaluation</dt><dd>Versioned scores &amp; task-owned conditions</dd></div>
 </dl>
+</section>
+
+<section class="sm-section" markdown>
+
+<p class="sm-eyebrow">Roadmap</p>
+
+## More engineering domains are on the way.
+
+Each new environment follows the same contract as the heat exchanger and joins
+SM-Bench once it is validated and released.
+
+<div class="sm-roadmap">
+<div class="sm-road is-live"><span class="sm-road-status">Available</span><h3>Heat exchangers</h3><p>Shell-and-tube and concentric-tube exchangers against thermal, hydraulic, mechanical and cost requirements.</p></div>
+<div class="sm-road is-next"><span class="sm-road-status">Coming soon</span><h3>Turbomachinery</h3><p>Axial compressor design: blade rows and flow path judged by a throughflow model, starting with compressors and followed by turbines.</p></div>
+<div class="sm-road is-next"><span class="sm-road-status">Coming soon</span><h3>Rotordynamics</h3><p>Shafts, bearings and discs: critical speeds, stability and vibration response of rotating machinery.</p></div>
+<div class="sm-road"><span class="sm-road-status">Planned</span><h3>3D turbomachinery flow</h3><p>Full three-dimensional blade designs evaluated with computational fluid dynamics.</p></div>
+<div class="sm-road"><span class="sm-road-status">Later</span><h3>Aerospace and beyond</h3><p>Further domains where a design can be judged by physics alone.</p></div>
+</div>
+
 </section>
 
 <section class="sm-section" markdown>

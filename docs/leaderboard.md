@@ -8,22 +8,26 @@ hide:
 
 # Engineering performance, measured.
 
-<p class="sm-lb-intro">Explore how language models turn a single prompt into a complete engineering design. Compare performance within a task, then inspect the constraints and evaluation stages behind the score.</p>
+<p class="sm-lb-intro">How well do language models design real engineering hardware? Every answer below is a complete heat-exchanger design, judged by the same physics referee.</p>
 
-Each model receives a task's prompt once per run and has to answer with a
-complete heat-exchanger design in a single attempt, with no feedback. Every
-answer goes through the same schema, design-rule, simulation, and scoring
-stages as any other design.
+Each model receives a design task (operating conditions, a duty target,
+pressure-drop limits and cost anchors) and answers once, with no feedback and
+no second attempt. The answer goes through schema checks, design-rule checks,
+a physics simulation and a versioned score. A design that fails any stage
+scores 0; one that meets every requirement earns 0.3, and a cheaper,
+better-engineered design earns up to 1.
 
-Tasks are ranked separately. Each task pins its own simulator and score
-version, so a score from one task cannot be compared with a score from another.
+The current benchmark is **heat_exchanger_suite_v1**: 30 different tasks at
+three difficulty levels. Next to frontier and open models it includes
+[SM_heat_exchanger_v1](https://huggingface.co/SM-AI/SM_heat_exchanger_v1), the
+first Suni Muhendis model, and its untuned base model, so the effect of
+fine-tuning is visible directly. None of the 30 tasks was used to train it.
 
-A **suite** is a set of different tasks, each answered once, with a mean
-score per difficulty level next to the overall mean. The earlier single-task
-sets, which send one prompt many times, are listed under **Archive**. A model
-that has not answered every task of a suite is shown but not ranked.
+Each task set is ranked on its own, because each pins its own simulator and
+score version. The earlier single-task sets, which send one prompt many times,
+are kept under **Archive**.
 
-<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261105-dash3" markdown="0">
+<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261105-dash4" markdown="0">
   <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
 

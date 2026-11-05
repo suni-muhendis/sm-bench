@@ -474,3 +474,29 @@
 }
 .md-typeset .sm-x-model a { color: inherit; }
 .md-typeset .sm-x-model a:hover, .md-typeset .sm-x-model a:focus-visible { color: var(--x-featured); text-decoration: underline; }
+
+/* Home: about grid and roadmap ------------------------------------------- */
+.sm-about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .9rem; margin-top: 1.4rem; }
+.sm-about-grid > div {
+  display: flex; flex-direction: column; gap: .35rem; padding: 1rem 1.1rem;
+  background: var(--sm-surface); border: 1px solid var(--sm-line); border-radius: .6rem;
+}
+.sm-about-grid strong { font-size: .78rem; color: var(--sm-heading); }
+.sm-about-grid span { font-size: .7rem; color: var(--md-default-fg-color--light); }
+
+.sm-roadmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); gap: .9rem; margin-top: 1.4rem; }
+.sm-road {
+  position: relative; display: flex; flex-direction: column; gap: .4rem; padding: 1.1rem 1.1rem 1.2rem;
+  background: var(--sm-surface); border: 1px dashed var(--sm-line); border-radius: .6rem;
+}
+.sm-road.is-live { border-style: solid; border-color: color-mix(in srgb, #1baf7a 45%, var(--sm-line)); }
+.sm-road.is-next { border-style: solid; border-color: color-mix(in srgb, var(--md-accent-fg-color) 40%, var(--sm-line)); }
+.md-typeset .sm-road h3 { margin: .2rem 0 0; font-size: .85rem; color: var(--sm-heading); }
+.md-typeset .sm-road p { margin: 0; font-size: .68rem; color: var(--md-default-fg-color--light); }
+.sm-road-status {
+  align-self: flex-start; padding: .1rem .5rem; border-radius: 1rem; font: 600 .56rem "IBM Plex Mono", monospace;
+  letter-spacing: .06em; text-transform: uppercase; background: var(--sm-soft); color: var(--md-default-fg-color--light);
+}
+.sm-road.is-live .sm-road-status { background: color-mix(in srgb, #1baf7a 18%, transparent); color: #127a55; }
+.sm-road.is-next .sm-road-status { background: var(--md-accent-fg-color--transparent); color: var(--sm-accent); }
+[data-md-color-scheme="slate"] .sm-road.is-live .sm-road-status { color: #5fd3a6; }
