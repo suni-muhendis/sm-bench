@@ -23,7 +23,7 @@ score per difficulty level next to the overall mean. The earlier single-task
 sets, which send one prompt many times, are listed under **Archive**. A model
 that has not answered every task of a suite is shown but not ranked.
 
-<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261105-dash2" markdown="0">
+<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261105-dash3" markdown="0">
   <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
 

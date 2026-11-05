@@ -202,7 +202,7 @@
   function init() {
     const root = document.getElementById("sm-leaderboard");
     if (!root) return;
-    fetch(root.dataset.src)
+    fetch(root.dataset.src, { cache: "no-cache" })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
