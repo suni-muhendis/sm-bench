@@ -18,9 +18,12 @@
   const text = (x, y, value, attrs = "") => `<text x="${x}" y="${y}" ${attrs}>${esc(value)}</text>`;
   const line = (x1, y1, x2, y2, cls = "sm-chart-grid") => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${cls}"/>`;
   const label = (row, y) => {
-    const [name, effort] = row.model.split("__reasoning-");
+    const [raw, effort] = row.model.split("__reasoning-");
+    const name = (row.display && row.display.label) || raw;
+    const sub = effort ? `reasoning: ${effort}` : (row.display && row.display.role === "featured" ? "fine-tuned · local GPU"
+      : row.display && row.display.role === "base" ? "base model · local GPU" : (row.provider === "openrouter" ? "via OpenRouter" : row.provider || ""));
     return text(12, y - 3, name.length > 31 ? name.slice(0, 29) + "…" : name, 'class="sm-chart-label"') +
-      text(12, y + 14, effort ? `reasoning: ${effort}` : (row.provider || ""), 'class="sm-chart-small"');
+      text(12, y + 14, sub, 'class="sm-chart-small"');
   };
   const mark = (detail, shape) => `<g class="sm-chart-mark" tabindex="0" role="img" aria-label="${esc(detail)}" data-detail="${esc(detail)}"><title>${esc(detail)}</title>${shape}</g>`;
   const rect = (x, y, w, h, color) => `<rect x="${x}" y="${y}" width="${Math.max(0, w)}" height="${h}" rx="2" fill="${color}"/>`;
@@ -133,7 +136,7 @@
       `<div class="sm-chart-controls"><label>Chart<select id="sm-chart-view">${Object.entries(views).map(([v,n])=>`<option value="${v}">${n}</option>`).join("")}</select></label>`+
       `<label id="sm-chart-axis-label" hidden>Horizontal axis<select id="sm-chart-axis"><option value="cost">Cost per run</option><option value="latency">Median latency</option></select></label>`+
       `<button type="button" id="sm-chart-download">Download SVG</button></div>`+
-      `<details class="sm-chart-models"><summary>Choose models <span id="sm-chart-selected"></span></summary><div class="sm-chart-selection"><button type="button" data-models="all">Select all</button><button type="button" data-models="none">Clear selection</button></div><fieldset><legend class="sm-sr-only">Models included in charts</legend>${task.leaderboard.map((r,i)=>`<label><input type="checkbox" data-model="${i}" checked> <span>${esc(r.model)}</span></label>`).join("")}</fieldset></details>`+
+      `<details class="sm-chart-models"><summary>Choose models <span id="sm-chart-selected"></span></summary><div class="sm-chart-selection"><button type="button" data-models="all">Select all</button><button type="button" data-models="none">Clear selection</button></div><fieldset><legend class="sm-sr-only">Models included in charts</legend>${task.leaderboard.map((r,i)=>`<label><input type="checkbox" data-model="${i}" checked> <span>${esc((r.display && r.display.label) || r.model)}</span></label>`).join("")}</fieldset></details>`+
       `<div class="sm-chart-content"></div><p class="sm-chart-tooltip" role="status" aria-live="polite">Hover over a mark or focus it with Tab to inspect its values.</p>`;
     const content=root.querySelector(".sm-chart-content");
     const draw=()=>{

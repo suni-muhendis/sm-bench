@@ -36,21 +36,92 @@
 
   const cellValue = (row, c) => (c.group ? (row.group_scores || {})[c.group] : row[c.key]);
 
+  const PROVIDERS = { openrouter: "via OpenRouter", local: "local GPU", opencode: "via OpenCode", hf: "via Hugging Face" };
+  const role = (row) => (row.display || {}).role;
+
+  function modelName(row) {
+    const shown = row.display || {};
+    const label = shown.label || row.model.split("__reasoning-")[0];
+    return shown.url
+      ? `<a href="${esc(shown.url)}" target="_blank" rel="noopener" title="${esc(row.model_id)}">${esc(label)}</a>`
+      : `<span title="${esc(row.model_id)}">${esc(label)}</span>`;
+  }
+
   function modelCell(row, task) {
-    const [base, variant] = row.model.split("__reasoning-");
-    let chip = variant ? `<span class="sm-lb-chip">reasoning: ${esc(variant)}</span>` : "";
+    const variant = row.model.split("__reasoning-")[1];
+    let chip = role(row) === "featured" ? '<span class="sm-lb-chip sm-lb-chip--brand">Fine-tuned</span>' : "";
+    chip += variant ? `<span class="sm-lb-chip">reasoning: ${esc(variant)}</span>` : "";
     if (row.complete === false && task && task.suite) {
-      chip += `<span class="sm-lb-chip" title="Not ranked: the mean covers fewer tasks than the others">incomplete: ${row.tasks_done}/${task.suite.n_tasks} tasks</span>`;
+      chip += `<span class="sm-lb-chip sm-lb-chip--warn" title="Not ranked: the mean covers fewer tasks than the others">incomplete: ${row.tasks_done}/${task.suite.n_tasks} tasks</span>`;
     }
-    const meta = [row.provider, row.source === "Manual" ? "manual runs" : null].filter(Boolean).join(" · ");
-    return `<div class="sm-lb-model"><strong title="${esc(row.model_id)}">${esc(base)}</strong>${chip}</div>` +
+    const meta = [(row.display || {}).note || PROVIDERS[row.provider] || row.provider,
+      row.source === "Manual" ? "manual runs" : null].filter(Boolean).join(" · ");
+    return `<div class="sm-lb-model"><strong>${modelName(row)}</strong>${chip}</div>` +
       (meta ? `<div class="sm-lb-sub">${esc(meta)}</div>` : "");
   }
+
+  // Overview for a suite: headline tiles, then the featured model against its own
+  // base model and the best other model, per difficulty level.
+  function renderSuiteOverview(task) {
+    const s = task.suite;
+    const ranked = task.leaderboard.filter((r) => r.complete !== false);
+    const top = ranked[0];
+    const featured = task.leaderboard.find((r) => role(r) === "featured");
+    const base = task.leaderboard.find((r) => role(r) === "base");
+    const rival = ranked.find((r) => !role(r));
+    const refs = s.groups.map((g) => s.reference_mean_score[g]).filter((v) => v != null);
+    const refMean = refs.length ? refs.reduce((a, b) => a + b, 0) / refs.length : null;
+    const name = (r) => esc((r.display || {}).label || r.model.split("__reasoning-")[0]);
+    const tile = (label, value, sub) =>
+      `<div class="sm-kpi"><span class="sm-kpi-label">${label}</span><span class="sm-kpi-value">${value}</span><span class="sm-kpi-sub">${sub}</span></div>`;
+    const tiles = `<div class="sm-kpis">` +
+      tile("Tasks", s.n_tasks, `${s.groups.length} levels · one answer each`) +
+      tile("Models", task.models, `${ranked.length} ranked`) +
+      (top ? tile("Top mean score", fmt(top.mean_score, "num"), name(top)) : "") +
+      (refMean != null ? tile("Reference design", fmt(refMean, "num"), "reachable ceiling, mean of levels") : "") +
+      `</div>`;
+    if (!featured) return tiles;
+
+    const series = [
+      { row: featured, cls: "sm-s1", label: name(featured) },
+      base ? { row: base, cls: "sm-s2", label: name(base) } : null,
+      rival ? { row: rival, cls: "sm-s3", label: `${name(rival)} (best other model)` } : null,
+    ].filter(Boolean);
+    const legend = series.map((x) => `<span class="sm-legend-item"><span class="sm-swatch ${x.cls}"></span>${x.label}</span>`).join("");
+    const levels = s.groups.map((g) => {
+      const ref = s.reference_mean_score[g];
+      const bars = series.map((x) => {
+        const v = (x.row.group_scores || {})[g];
+        const w = v == null ? 0 : Math.max(0, Math.min(1, v)) * 100;
+        const tip = `${x.label.replace(/<[^>]+>/g, "")}, ${g}: ${fmt(v, "num")}`;
+        return `<div class="sm-fbar" tabindex="0" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="sm-fbar-track"><span class="${x.cls}" style="width:${w.toFixed(1)}%"></span>` +
+          (ref != null ? `<span class="sm-fbar-ref" style="left:${(100 * ref).toFixed(1)}%"></span>` : "") +
+          `</span><span class="sm-fbar-val">${fmt(v, "num")}</span></div>`;
+      }).join("");
+      return `<div class="sm-flevel"><div class="sm-flevel-name">${esc(g.charAt(0).toUpperCase() + g.slice(1))}` +
+        (ref != null ? `<small>reference ${fmt(ref, "num")}</small>` : "") + `</div><div class="sm-fbars">${bars}</div></div>`;
+    }).join("");
+    const shown = featured.display || {};
+    const link = shown.url
+      ? `<a class="sm-feature-link" href="${esc(shown.url)}" target="_blank" rel="noopener">View on Hugging Face →</a>` : "";
+    return tiles +
+      `<section class="sm-feature" aria-label="Featured model">` +
+      `<div class="sm-feature-head"><div><span class="sm-feature-eyebrow">Suni Muhendis model</span>` +
+      `<h3 class="sm-feature-title">${name(featured)}</h3>` +
+      `<p class="sm-feature-note">${esc(shown.note || "")}. None of these tasks was used to train it.</p></div>${link}</div>` +
+      `<div class="sm-legend">${legend}<span class="sm-legend-item"><span class="sm-swatch sm-swatch--ref"></span>reference design</span></div>` +
+      `<div class="sm-flevels">${levels}</div>` +
+      `<p class="sm-feature-foot">Mean score per difficulty level, 0 to 1. The base model ran on the same GPU with the same settings.</p>` +
+      `</section>`;
+  }
+
+  // Sequential tint for a 0–1 score cell: one hue, stronger with the value.
+  const heat = (v) => (v == null ? "" : ` style="--sm-heat-a:${(6 + 30 * Math.max(0, Math.min(1, v))).toFixed(0)}%"`);
 
   function renderTable(task, state) {
     const query = state.query.trim().toLowerCase();
     const rows = task.leaderboard.filter((row) =>
-      [row.model, row.model_id, row.provider].some((value) => String(value || "").toLowerCase().includes(query)));
+      [row.model, row.model_id, row.provider, (row.display || {}).label].some((value) => String(value || "").toLowerCase().includes(query)));
     const columns = columnsFor(task);
     if (state.sort) {
       const { key, dir } = state.sort;
@@ -75,10 +146,15 @@
           const width = row.mean_score ? (100 * row.mean_score) / max : 0;
           return `<td class="sm-lb-num"><span class="sm-lb-score"><span class="sm-lb-bar"><span style="width:${width.toFixed(1)}%"></span></span><span class="sm-lb-val">${fmt(row.mean_score, "num")}</span></span></td>`;
         }
+        if (c.group) {
+          const v = cellValue(row, c);
+          return `<td class="sm-lb-num sm-lb-heat"${heat(v)}>${fmt(v, c.kind)}</td>`;
+        }
         return `<td class="sm-lb-num">${fmt(cellValue(row, c), c.kind)}</td>`;
       }).join("");
       const rank = row.complete === false ? "–" : task.leaderboard.indexOf(row) + 1;
-      return `<tr><td class="sm-lb-rank">${rank}</td><td>${modelCell(row, task)}</td>${cells}</tr>`;
+      const cls = role(row) === "featured" ? ' class="sm-lb-featured"' : "";
+      return `<tr${cls}><td class="sm-lb-rank">${rank}</td><td>${modelCell(row, task)}</td>${cells}</tr>`;
     }).join("");
     return `<p class="sm-lb-count" role="status">Showing ${rows.length} of ${task.leaderboard.length} models · Rank follows the original score order. Select a column to sort.</p>` +
       `<div class="sm-lb-scroll" tabindex="0" role="region" aria-label="Model results; scroll horizontally for more columns"><table class="sm-lb-table"><caption class="sm-sr-only">${esc(task.title)} model results</caption><thead><tr><th scope="col" class="sm-lb-rank">#</th><th scope="col">Model</th>${head}</tr></thead><tbody>${body || `<tr><td colspan="${columns.length + 2}" class="sm-lb-empty">No models match your search. Try another name or provider.</td></tr>`}</tbody></table></div>`;
@@ -104,14 +180,10 @@
     ].filter(Boolean).join(" · ");
     const date = (iso) => (iso ? iso.slice(0, 10) : "–");
     const s = task.suite;
-    const reference = s
-      ? s.groups.map((g) => `${g} ${(s.reference_mean_score[g] ?? NaN).toFixed(2)}`).join(" · ")
-      : null;
     const facts = [
       ["Simulator", task.simulator_version || "legacy"],
       ["Score", task.score_version || "legacy"],
-      s ? ["Tasks", `${s.n_tasks}, one answer each (${s.groups.join(" / ")})`] : ["Requirements", targets || "–"],
-      ...(s ? [["Reference design", reference]] : []),
+      ...(s ? [] : [["Requirements", targets || "–"]]),
       ["Runs", `${task.runs} across ${task.models} models`],
       ["Recorded", `${date(task.first_run)} to ${date(task.last_run)}`],
     ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
@@ -119,6 +191,7 @@
     return `<h2 class="sm-lb-title">${esc(task.title)}${badge}</h2>` +
       `<p class="sm-lb-slug"><code>${esc(task.slug)}</code> · <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results/${encodeURIComponent(task.trackId)}/${encodeURIComponent(task.slug)}">task files</a></p>` +
       `<dl class="sm-lb-facts">${facts}</dl>` +
+      (task.kind === "suite" && task.suite ? renderSuiteOverview(task) : "") +
       `<section class="sm-charts" aria-label="Interactive model comparisons"></section>` +
       `<h3>Detailed results</h3>` +
       `<div class="sm-lb-toolbar"><label for="sm-lb-search">Find a model<input id="sm-lb-search" type="search" placeholder="Model name or provider…" value="${esc(state.query)}" autocomplete="off"></label></div>` +

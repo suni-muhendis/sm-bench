@@ -177,6 +177,25 @@ def _distribution(values: List[float]) -> Optional[Dict[str, Any]]:
     ))
 
 
+def _model_display(models_config: Path) -> Dict[str, Dict[str, Any]]:
+    """Optional ``display`` blocks from the model registry, keyed by model name.
+
+    A block may set ``label`` (shown instead of the run name), ``url`` (link on the
+    name), ``note`` (sub-line) and ``role`` (``featured`` or ``base``).
+    """
+    try:
+        config = json.loads(models_config.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    out: Dict[str, Dict[str, Any]] = {}
+    for models in (config.get("providers") or {}).values():
+        for model in models or []:
+            display = model.get("display")
+            if isinstance(display, dict) and model.get("name"):
+                out[str(model["name"])] = display
+    return out
+
+
 def _suite_columns(group: List[Dict[str, Any]], suite: Dict[str, Any]) -> Dict[str, Any]:
     """Per-group means and completeness for a suite: one answer per task and repeat."""
     groups = suite.get("groups") or {}
@@ -199,7 +218,8 @@ def _suite_columns(group: List[Dict[str, Any]], suite: Dict[str, Any]) -> Dict[s
 
 
 def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any],
-                 suite: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+                 suite: Optional[Dict[str, Any]] = None,
+                 display: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     by_model: Dict[str, List[Dict[str, Any]]] = {}
     for record in records:
         by_model.setdefault(str(record.get("model_name") or "Unknown"), []).append(record)
@@ -252,6 +272,9 @@ def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any],
         })
         if suite is not None:
             rows[-1].update(_suite_columns(group, suite))
+        shown = (display or {}).get(model.split("__reasoning-")[0])
+        if shown:
+            rows[-1]["display"] = {k: shown[k] for k in ("label", "url", "note", "role") if k in shown}
 
     rows.sort(key=lambda row: (
         # A model that has not answered every task of a suite is not ranked
@@ -276,7 +299,8 @@ def _funnel(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return stages
 
 
-def build(results_root: Path) -> Dict[str, Any]:
+def build(results_root: Path, models_config: Optional[Path] = None) -> Dict[str, Any]:
+    display = _model_display(models_config) if models_config else {}
     tracks = []
     for track, label in TRACKS.items():
         track_dir = results_root / track
@@ -299,7 +323,7 @@ def build(results_root: Path) -> Dict[str, Any]:
                 status = str(record.get("status") or "unknown")
                 statuses[status] = statuses.get(status, 0) + 1
             versioned = next((r for r in records if r.get("simulator_version")), {})
-            leaderboard = _leaderboard(records, task, suite)
+            leaderboard = _leaderboard(records, task, suite, display)
             tasks.append({
                 "slug": task_dir.name,
                 "title": _task_title(task_dir),
@@ -346,9 +370,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--results", default="results", type=Path)
     parser.add_argument("--out", default="docs/data/leaderboard.json", type=Path)
+    parser.add_argument("--models-config", default="configs/benchmarks/models.json", type=Path)
     args = parser.parse_args()
 
-    data = build(args.results)
+    data = build(args.results, args.models_config)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     tasks = sum(len(track["tasks"]) for track in data["tracks"])
