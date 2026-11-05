@@ -12,8 +12,8 @@ different simulator or score versions comparable.
   `tasks.jsonl` runs every task once per repeat, each with the prompt the
   environment builds from it. Records carry `suite_id` and `task_group`.
 - `heat_exchanger_suite_v1`: 30 heat-exchanger tasks at three difficulty
-  levels, scored with `heat_exchanger_score_v4`, with results for 14 model
-  configurations.
+  levels, scored with `heat_exchanger_score_v4`, with zero-shot results for
+  15 model configurations (13 shown on the site).
 - Provider `local` (`TransformersClient`): open-weight models and PEFT adapters
   run greedily on a GPU, pinned to a Hugging Face revision. Install with
   `pip install -e .[local]`.
