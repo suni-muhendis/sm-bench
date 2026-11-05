@@ -239,6 +239,19 @@ metrics behind it.
 
 </section>
 
+<section class="sm-section" markdown>
+
+<p class="sm-eyebrow">Team</p>
+
+## The people behind Suni Muhendis.
+
+<div class="sm-team">
+<div class="sm-member"><span class="sm-avatar" aria-hidden="true">MR</span><div><h3>Mehmet Fatih Reyhan</h3><p>Co-founder</p><a href="https://github.com/mfreyhan">GitHub ↗</a></div></div>
+<div class="sm-member"><span class="sm-avatar" aria-hidden="true">EŞ</span><div><h3>Ertuğrul Şahin</h3><p>Co-founder</p><a href="https://github.com/ertugrl">GitHub ↗</a></div></div>
+</div>
+
+</section>
+
 <section class="sm-license" markdown>
 
 ## License and citation

@@ -27,7 +27,7 @@ Each task set is ranked on its own, because each pins its own simulator and
 score version. The earlier single-task sets, which send one prompt many times,
 are kept under **Archive**.
 
-<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261105-dash4" markdown="0">
+<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261105-dash5" markdown="0">
   <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
 

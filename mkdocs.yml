@@ -54,11 +54,11 @@ hooks:
   - scripts/mkdocs_hooks.py
 
 extra_css:
-  - stylesheets/extra.css?v=20261105-dash4
+  - stylesheets/extra.css?v=20261105-dash5
 extra_javascript:
-  - javascripts/charts.js?v=20261105-dash4
-  - javascripts/suite.js?v=20261105-dash4
-  - javascripts/leaderboard.js?v=20261105-dash4
+  - javascripts/charts.js?v=20261105-dash5
+  - javascripts/suite.js?v=20261105-dash5
+  - javascripts/leaderboard.js?v=20261105-dash5
 
 markdown_extensions:
   - admonition

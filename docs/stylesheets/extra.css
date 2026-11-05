@@ -500,3 +500,11 @@
 .sm-road.is-live .sm-road-status { background: color-mix(in srgb, #1baf7a 18%, transparent); color: #127a55; }
 .sm-road.is-next .sm-road-status { background: var(--md-accent-fg-color--transparent); color: var(--sm-accent); }
 [data-md-color-scheme="slate"] .sm-road.is-live .sm-road-status { color: #5fd3a6; }
+
+/* Home: team */
+.sm-team { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .9rem; margin-top: 1.4rem; max-width: 40rem; }
+.sm-member { display: flex; align-items: center; gap: 1rem; padding: 1.1rem 1.2rem; background: var(--sm-surface); border: 1px solid var(--sm-line); border-radius: .6rem; }
+.sm-avatar { flex: none; display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; font: 600 .85rem "IBM Plex Sans", sans-serif; letter-spacing: .03em; color: #fff; background: linear-gradient(135deg, #17324d, #c4622d); }
+.md-typeset .sm-member h3 { margin: 0; font-size: .85rem; color: var(--sm-heading); }
+.md-typeset .sm-member p { margin: .1rem 0 .25rem; font-size: .66rem; color: var(--md-default-fg-color--light); }
+.md-typeset .sm-member a { font-size: .66rem; font-weight: 600; }
