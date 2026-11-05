@@ -40,5 +40,8 @@
     "easy": 0.9563,
     "medium": 0.8906,
     "hard": 0.7922
+  },
+  "hidden_models": {
+    "qwen-2.5-7b-instruct": "Same model as the base of SM_heat_exchanger_v1, served by a third-party API; the base run on the same GPU is the one shown."
   }
 }

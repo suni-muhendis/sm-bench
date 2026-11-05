@@ -20,8 +20,8 @@
   const label = (row, y) => {
     const [raw, effort] = row.model.split("__reasoning-");
     const name = (row.display && row.display.label) || raw;
-    const sub = effort ? `reasoning: ${effort}` : (row.display && row.display.role === "featured" ? "fine-tuned · local GPU"
-      : row.display && row.display.role === "base" ? "base model · local GPU" : (row.provider === "openrouter" ? "via OpenRouter" : row.provider || ""));
+    const sub = effort ? `reasoning: ${effort}` : (row.display && row.display.role === "featured" ? "fine-tuned"
+      : row.display && row.display.role === "base" ? "base model" : "");
     return text(12, y - 3, name.length > 31 ? name.slice(0, 29) + "…" : name, 'class="sm-chart-label"') +
       text(12, y + 14, sub, 'class="sm-chart-small"');
   };

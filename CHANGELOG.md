@@ -24,6 +24,10 @@ different simulator or score versions comparable.
 - The leaderboard lists suites first, with a mean score per difficulty level,
   and the single-task sets under **Archive**. A model that has not answered
   every task of a suite is shown but not ranked.
+- A suite page is a dashboard: headline figures, the featured model against
+  its base model, and interactive charts (ranking by level, heatmap, task by
+  task, cost and speed; `?view=` links a chart). A suite can hide a run from
+  the site with `hidden_models`; the record stays in the repository.
 
 ## [0.8.0] - 2026-09-29
 

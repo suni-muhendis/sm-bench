@@ -204,7 +204,13 @@ def _suite_columns(group: List[Dict[str, Any]], suite: Dict[str, Any]) -> Dict[s
     by_label = {label: [_score(r) for r in scored if r.get("task_group") == label] for label in labels}
     gate = {label: [r for r in group if r.get("task_group") == label] for label in labels}
     tasks_done = len({r.get("task_id") for r in group})
+    per_task = {}
+    for r in group:
+        if r.get("status") not in NOT_RUN:
+            per_task.setdefault(str(r.get("task_id")), []).append(_score(r))
     return {
+        # Mean per task over repeats: the points of the per-task chart.
+        "task_scores": {t: _round(_mean(v)) for t, v in per_task.items()},
         "group_scores": {label: _round(_mean(v)) for label, v in by_label.items()},
         "group_gate_pct": {
             label: _round(_pct(sum(
@@ -313,6 +319,11 @@ def build(results_root: Path, models_config: Optional[Path] = None) -> Dict[str,
             records = _read_records(task_dir)
             suite = (json.loads(suite_path.read_text(encoding="utf-8-sig"))
                      if suite_path.is_file() else None)
+            if suite is not None:
+                # A suite may hide a run from the site (the record stays on disk),
+                # e.g. a second copy of a model already shown.
+                hidden = set(suite.get("hidden_models") or {})
+                records = [r for r in records if str(r.get("model_name")) not in hidden]
             if not records or (suite is None and not task_path.is_file()):
                 continue
             # A suite has no single task: requirements come from each record's task.
@@ -334,6 +345,7 @@ def build(results_root: Path, models_config: Optional[Path] = None) -> Dict[str,
                     "n_tasks": suite.get("n_tasks") or len(suite.get("groups") or {}),
                     "groups": list(dict.fromkeys((suite.get("groups") or {}).values())),
                     "reference_mean_score": suite.get("reference_mean_score") or {},
+                    "tasks": [{"id": t, "group": g} for t, g in (suite.get("groups") or {}).items()],
                 } if suite is not None else None,
                 "task_set_version": task.get("task_set_version") or versioned.get("task_set_version"),
                 "score_version": task.get("score_version") or versioned.get("score_version"),

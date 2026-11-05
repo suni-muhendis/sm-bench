@@ -36,7 +36,6 @@
 
   const cellValue = (row, c) => (c.group ? (row.group_scores || {})[c.group] : row[c.key]);
 
-  const PROVIDERS = { openrouter: "via OpenRouter", local: "local GPU", opencode: "via OpenCode", hf: "via Hugging Face" };
   const role = (row) => (row.display || {}).role;
 
   function modelName(row) {
@@ -54,65 +53,10 @@
     if (row.complete === false && task && task.suite) {
       chip += `<span class="sm-lb-chip sm-lb-chip--warn" title="Not ranked: the mean covers fewer tasks than the others">incomplete: ${row.tasks_done}/${task.suite.n_tasks} tasks</span>`;
     }
-    const meta = [(row.display || {}).note || PROVIDERS[row.provider] || row.provider,
+    const meta = [(row.display || {}).note,
       row.source === "Manual" ? "manual runs" : null].filter(Boolean).join(" · ");
     return `<div class="sm-lb-model"><strong>${modelName(row)}</strong>${chip}</div>` +
       (meta ? `<div class="sm-lb-sub">${esc(meta)}</div>` : "");
-  }
-
-  // Overview for a suite: headline tiles, then the featured model against its own
-  // base model and the best other model, per difficulty level.
-  function renderSuiteOverview(task) {
-    const s = task.suite;
-    const ranked = task.leaderboard.filter((r) => r.complete !== false);
-    const top = ranked[0];
-    const featured = task.leaderboard.find((r) => role(r) === "featured");
-    const base = task.leaderboard.find((r) => role(r) === "base");
-    const rival = ranked.find((r) => !role(r));
-    const refs = s.groups.map((g) => s.reference_mean_score[g]).filter((v) => v != null);
-    const refMean = refs.length ? refs.reduce((a, b) => a + b, 0) / refs.length : null;
-    const name = (r) => esc((r.display || {}).label || r.model.split("__reasoning-")[0]);
-    const tile = (label, value, sub) =>
-      `<div class="sm-kpi"><span class="sm-kpi-label">${label}</span><span class="sm-kpi-value">${value}</span><span class="sm-kpi-sub">${sub}</span></div>`;
-    const tiles = `<div class="sm-kpis">` +
-      tile("Tasks", s.n_tasks, `${s.groups.length} levels · one answer each`) +
-      tile("Models", task.models, `${ranked.length} ranked`) +
-      (top ? tile("Top mean score", fmt(top.mean_score, "num"), name(top)) : "") +
-      (refMean != null ? tile("Reference design", fmt(refMean, "num"), "reachable ceiling, mean of levels") : "") +
-      `</div>`;
-    if (!featured) return tiles;
-
-    const series = [
-      { row: featured, cls: "sm-s1", label: name(featured) },
-      base ? { row: base, cls: "sm-s2", label: name(base) } : null,
-      rival ? { row: rival, cls: "sm-s3", label: `${name(rival)} (best other model)` } : null,
-    ].filter(Boolean);
-    const legend = series.map((x) => `<span class="sm-legend-item"><span class="sm-swatch ${x.cls}"></span>${x.label}</span>`).join("");
-    const levels = s.groups.map((g) => {
-      const ref = s.reference_mean_score[g];
-      const bars = series.map((x) => {
-        const v = (x.row.group_scores || {})[g];
-        const w = v == null ? 0 : Math.max(0, Math.min(1, v)) * 100;
-        const tip = `${x.label.replace(/<[^>]+>/g, "")}, ${g}: ${fmt(v, "num")}`;
-        return `<div class="sm-fbar" tabindex="0" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="sm-fbar-track"><span class="${x.cls}" style="width:${w.toFixed(1)}%"></span>` +
-          (ref != null ? `<span class="sm-fbar-ref" style="left:${(100 * ref).toFixed(1)}%"></span>` : "") +
-          `</span><span class="sm-fbar-val">${fmt(v, "num")}</span></div>`;
-      }).join("");
-      return `<div class="sm-flevel"><div class="sm-flevel-name">${esc(g.charAt(0).toUpperCase() + g.slice(1))}` +
-        (ref != null ? `<small>reference ${fmt(ref, "num")}</small>` : "") + `</div><div class="sm-fbars">${bars}</div></div>`;
-    }).join("");
-    const shown = featured.display || {};
-    const link = shown.url
-      ? `<a class="sm-feature-link" href="${esc(shown.url)}" target="_blank" rel="noopener">View on Hugging Face →</a>` : "";
-    return tiles +
-      `<section class="sm-feature" aria-label="Featured model">` +
-      `<div class="sm-feature-head"><div><span class="sm-feature-eyebrow">Suni Muhendis model</span>` +
-      `<h3 class="sm-feature-title">${name(featured)}</h3>` +
-      `<p class="sm-feature-note">${esc(shown.note || "")}. None of these tasks was used to train it.</p></div>${link}</div>` +
-      `<div class="sm-legend">${legend}<span class="sm-legend-item"><span class="sm-swatch sm-swatch--ref"></span>reference design</span></div>` +
-      `<div class="sm-flevels">${levels}</div>` +
-      `<p class="sm-feature-foot">Mean score per difficulty level, 0 to 1. The base model ran on the same GPU with the same settings.</p>` +
-      `</section>`;
   }
 
   // Sequential tint for a 0–1 score cell: one hue, stronger with the value.
@@ -191,7 +135,6 @@
     return `<h2 class="sm-lb-title">${esc(task.title)}${badge}</h2>` +
       `<p class="sm-lb-slug"><code>${esc(task.slug)}</code> · <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results/${encodeURIComponent(task.trackId)}/${encodeURIComponent(task.slug)}">task files</a></p>` +
       `<dl class="sm-lb-facts">${facts}</dl>` +
-      (task.kind === "suite" && task.suite ? renderSuiteOverview(task) : "") +
       `<section class="sm-charts" aria-label="Interactive model comparisons"></section>` +
       `<h3>Detailed results</h3>` +
       `<div class="sm-lb-toolbar"><label for="sm-lb-search">Find a model<input id="sm-lb-search" type="search" placeholder="Model name or provider…" value="${esc(state.query)}" autocomplete="off"></label></div>` +
@@ -224,6 +167,10 @@
     const draw = () => {
       select.value = state.slug;
       const task = tasks.find((t) => t.slug === state.slug);
+      if (task.kind === "suite" && task.suite && window.SMSuite) {
+        window.SMSuite.render(body, task);
+        return;
+      }
       body.innerHTML = renderTask(task, state);
       if (window.SMBenchCharts) window.SMBenchCharts.mount(body.querySelector(".sm-charts"), task);
     };
