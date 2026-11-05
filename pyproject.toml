@@ -41,6 +41,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0"]
+# Open-weight models run locally on a GPU (provider "local").
+local = ["torch", "transformers==5.13.0", "accelerate==1.14.0", "peft==0.19.1"]
 
 [project.urls]
 Homepage = "https://github.com/suni-muhendis/sm-bench"

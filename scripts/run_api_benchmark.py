@@ -278,6 +278,9 @@ def multi_client_factory(spec: Dict[str, Any]) -> BaseModelClient:
     elif provider == "openrouter":
         from sm_bench.model_clients.openrouter_client import OpenRouterClient
         return OpenRouterClient(model=spec["model"], name=spec.get("name"), params=spec.get("params"))
+    elif provider == "local":
+        from sm_bench.model_clients.transformers_client import TransformersClient
+        return TransformersClient(model=spec["model"], name=spec.get("name"), params=spec.get("params"))
     else:
         from sm_bench.model_clients.hf_client import HFInferenceClient
         return HFInferenceClient(model=spec["model"], name=spec.get("name"), params=spec.get("params"))
@@ -358,27 +361,14 @@ def run_benchmark(
     logger = logger or setup_logger("hf_benchmark")
     results_root = results_root or os.path.join(_REPO_ROOT, "results")
     prompt_dir = os.path.join(results_root, "zero_shot", prompt_slug)
-    prompt_path = os.path.join(prompt_dir, "prompt.txt")
-    task_path = os.path.join(prompt_dir, "task.json")
-    
-    if not os.path.exists(prompt_path):
-        raise FileNotFoundError(f"prompt.txt not found: {prompt_path}")
-    if not os.path.exists(task_path):
-        raise FileNotFoundError(f"task.json not found: {task_path}")
-
-    with open(prompt_path, "r", encoding="utf-8-sig") as f:
-        prompt_text = f.read()
-        
-    task_params = _load_json(task_path)
-    
-    task_id = task_params.get("task_id", prompt_slug)
-    task_set_version = task_params.get("task_set_version", "v1")
-
-    weights = {k: task_params[k] for k in _WEIGHT_KEYS if k in task_params}
-    env = _build_environment(task_params)
-    used_score_version = env.get_score_function(task_params).VERSION
-    total = len(model_specs) * repeats
-    logger.info(f"Task '{task_id}' (Prompt '{prompt_slug}'): {len(model_specs)} models x {repeats} repeats = {total} runs.")
+    items = _load_task_items(prompt_dir, prompt_slug)
+    suite_id = items[0]["suite_id"]
+    env = _build_environment(items[0]["task_params"])
+    total = len(model_specs) * len(items) * repeats
+    logger.info(
+        f"Prompt '{prompt_slug}': {len(model_specs)} models x {len(items)} tasks x "
+        f"{repeats} repeats = {total} runs."
+    )
 
     # Prices are read live, once, at the start of the benchmark. Pricing a run
     # from the locally synced registry would attribute it to whatever rate was
@@ -392,10 +382,11 @@ def run_benchmark(
     out_dir = os.path.join(prompt_dir, "api_runs")
     os.makedirs(out_dir, exist_ok=True)
     
+    longest_prompt = max((item["prompt_text"] for item in items), key=len)
     for original_model in model_specs:
         model, preflight = _preflight_model(
             original_model,
-            prompt_text,
+            longest_prompt,
             max_output_tokens=max_output_tokens,
             temperature=temperature,
         )
@@ -419,7 +410,13 @@ def run_benchmark(
             client_err = f"{type(e).__name__}: {e}"
             logger.error(f"[{model_name}] client could not be instantiated: {client_err}")
 
-        for r in range(repeats):
+        for item, r in ((item, r) for item in items for r in range(repeats)):
+            task_id = item["task_id"]
+            task_params = item["task_params"]
+            prompt_text = item["prompt_text"]
+            task_set_version = task_params.get("task_set_version", "v1")
+            weights = {k: task_params[k] for k in _WEIGHT_KEYS if k in task_params}
+            used_score_version = env.get_score_function(task_params).VERSION
             done += 1
             progress = f"[{done}/{total}]"
             record: Dict[str, Any] = {
@@ -436,6 +433,8 @@ def run_benchmark(
                 "prompt_slug": prompt_slug,
                 "task_id": task_id,
                 "task_set_version": task_set_version,
+                **({"suite_id": suite_id, "task_group": item["task_group"]}
+                   if suite_id else {}),
                 "environment": env.name,
                 "score_version": used_score_version,
                 "simulator_version": env.simulator.VERSION,
@@ -533,10 +532,65 @@ def run_benchmark(
             with open(fpath, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
             written.append(fpath)
-            logger.info(f"{progress} {model_name} | r{r} -> {record['status']} score={record['total_reward']:.3f}")
+            logger.info(f"{progress} {model_name} | {task_id} r{r} -> {record['status']} score={record['total_reward']:.3f}")
 
-    logger.info(f"Done for task {task_id}.")
+    logger.info(f"Done for prompt {prompt_slug}.")
     return written
+
+
+def _load_task_items(prompt_dir: str, prompt_slug: str) -> List[Dict[str, Any]]:
+    """The tasks one prompt slug runs: a single task, or every task of a suite.
+
+    A single-task folder holds ``prompt.txt`` and ``task.json``. A suite folder
+    holds ``suite.json`` and ``tasks.jsonl``; each task's prompt is built from the
+    task with the environment's own prompt builder, so the prompt is exactly the
+    one the task defines. Group labels live in ``suite.json`` and never enter the
+    task dict, because the prompt prints the whole task.
+    """
+    suite_path = os.path.join(prompt_dir, "suite.json")
+    if os.path.exists(suite_path):
+        import importlib
+        suite = _load_json(suite_path)
+        module_name, func_name = suite["prompt_builder"].rsplit(".", 1)
+        build_prompt = getattr(importlib.import_module(module_name), func_name)
+        groups = suite.get("groups") or {}
+        items = []
+        with open(os.path.join(prompt_dir, "tasks.jsonl"), "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                task = json.loads(line)
+                if "environment" not in task and suite.get("environment"):
+                    task_for_env = {**task, "environment": suite["environment"]}
+                else:
+                    task_for_env = task
+                items.append({
+                    "suite_id": suite.get("suite_id", prompt_slug),
+                    "task_id": task["task_id"],
+                    "task_group": groups.get(task["task_id"]),
+                    "task_params": task_for_env,
+                    "prompt_text": build_prompt(task),
+                })
+        if not items:
+            raise ValueError(f"suite has no tasks: {prompt_dir}")
+        return items
+
+    prompt_path = os.path.join(prompt_dir, "prompt.txt")
+    task_path = os.path.join(prompt_dir, "task.json")
+    if not os.path.exists(prompt_path):
+        raise FileNotFoundError(f"prompt.txt not found: {prompt_path}")
+    if not os.path.exists(task_path):
+        raise FileNotFoundError(f"task.json not found: {task_path}")
+    with open(prompt_path, "r", encoding="utf-8-sig") as f:
+        prompt_text = f.read()
+    task_params = _load_json(task_path)
+    return [{
+        "suite_id": None,
+        "task_id": task_params.get("task_id", prompt_slug),
+        "task_group": None,
+        "task_params": task_params,
+        "prompt_text": prompt_text,
+    }]
 
 def _select_models(all_models: List[dict], selection: Optional[List[str]], provider: Optional[str] = None) -> List[dict]:
     if provider:

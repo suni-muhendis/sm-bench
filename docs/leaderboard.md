@@ -18,7 +18,12 @@ stages as any other design.
 Tasks are ranked separately. Each task pins its own simulator and score
 version, so a score from one task cannot be compared with a score from another.
 
-<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261029-charts1" markdown="0">
+A **suite** is a set of different tasks, each answered once, with a mean
+score per difficulty level next to the overall mean. The earlier single-task
+sets, which send one prompt many times, are listed under **Archive**. A model
+that has not answered every task of a suite is shown but not ranked.
+
+<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261105-suites1" markdown="0">
   <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
 

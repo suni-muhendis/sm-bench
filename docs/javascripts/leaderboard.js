@@ -27,9 +27,21 @@
     }
   }
 
-  function modelCell(row) {
+  // A suite adds one mean-score column per task group (e.g. easy / medium / hard).
+  function columnsFor(task) {
+    if (task.kind !== "suite" || !task.suite) return COLUMNS;
+    const groups = task.suite.groups.map((g) => ({ key: `group:${g}`, label: g.charAt(0).toUpperCase() + g.slice(1), kind: "num", group: g }));
+    return [COLUMNS[0], ...groups, ...COLUMNS.slice(1)];
+  }
+
+  const cellValue = (row, c) => (c.group ? (row.group_scores || {})[c.group] : row[c.key]);
+
+  function modelCell(row, task) {
     const [base, variant] = row.model.split("__reasoning-");
-    const chip = variant ? `<span class="sm-lb-chip">reasoning: ${esc(variant)}</span>` : "";
+    let chip = variant ? `<span class="sm-lb-chip">reasoning: ${esc(variant)}</span>` : "";
+    if (row.complete === false && task && task.suite) {
+      chip += `<span class="sm-lb-chip" title="Not ranked: the mean covers fewer tasks than the others">incomplete: ${row.tasks_done}/${task.suite.n_tasks} tasks</span>`;
+    }
     const meta = [row.provider, row.source === "Manual" ? "manual runs" : null].filter(Boolean).join(" · ");
     return `<div class="sm-lb-model"><strong title="${esc(row.model_id)}">${esc(base)}</strong>${chip}</div>` +
       (meta ? `<div class="sm-lb-sub">${esc(meta)}</div>` : "");
@@ -39,10 +51,12 @@
     const query = state.query.trim().toLowerCase();
     const rows = task.leaderboard.filter((row) =>
       [row.model, row.model_id, row.provider].some((value) => String(value || "").toLowerCase().includes(query)));
+    const columns = columnsFor(task);
     if (state.sort) {
       const { key, dir } = state.sort;
+      const col = columns.find((c) => c.key === key) || { key };
       rows.sort((a, b) => {
-        const av = a[key], bv = b[key];
+        const av = cellValue(a, col), bv = cellValue(b, col);
         if (av == null && bv == null) return 0;
         if (av === null || av === undefined) return 1;
         if (bv === null || bv === undefined) return -1;
@@ -50,23 +64,24 @@
       });
     }
     const max = Math.max(1e-9, ...task.leaderboard.map((r) => r.mean_score || 0));
-    const head = COLUMNS.map((c) => {
+    const head = columns.map((c) => {
       const active = state.sort && state.sort.key === c.key;
       const arrow = active ? (state.sort.dir < 0 ? " ↓" : " ↑") : "";
       return `<th scope="col" class="sm-lb-num" aria-sort="${active ? (state.sort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${c.key}">${c.label}${arrow}</button></th>`;
     }).join("");
     const body = rows.map((row) => {
-      const cells = COLUMNS.map((c) => {
+      const cells = columns.map((c) => {
         if (c.kind === "score") {
           const width = row.mean_score ? (100 * row.mean_score) / max : 0;
           return `<td class="sm-lb-num"><span class="sm-lb-score"><span class="sm-lb-bar"><span style="width:${width.toFixed(1)}%"></span></span><span class="sm-lb-val">${fmt(row.mean_score, "num")}</span></span></td>`;
         }
-        return `<td class="sm-lb-num">${fmt(row[c.key], c.kind)}</td>`;
+        return `<td class="sm-lb-num">${fmt(cellValue(row, c), c.kind)}</td>`;
       }).join("");
-      return `<tr><td class="sm-lb-rank">${task.leaderboard.indexOf(row) + 1}</td><td>${modelCell(row)}</td>${cells}</tr>`;
+      const rank = row.complete === false ? "–" : task.leaderboard.indexOf(row) + 1;
+      return `<tr><td class="sm-lb-rank">${rank}</td><td>${modelCell(row, task)}</td>${cells}</tr>`;
     }).join("");
     return `<p class="sm-lb-count" role="status">Showing ${rows.length} of ${task.leaderboard.length} models · Rank follows the original score order. Select a column to sort.</p>` +
-      `<div class="sm-lb-scroll" tabindex="0" role="region" aria-label="Model results; scroll horizontally for more columns"><table class="sm-lb-table"><caption class="sm-sr-only">${esc(task.title)} model results</caption><thead><tr><th scope="col" class="sm-lb-rank">#</th><th scope="col">Model</th>${head}</tr></thead><tbody>${body || '<tr><td colspan="9" class="sm-lb-empty">No models match your search. Try another name or provider.</td></tr>'}</tbody></table></div>`;
+      `<div class="sm-lb-scroll" tabindex="0" role="region" aria-label="Model results; scroll horizontally for more columns"><table class="sm-lb-table"><caption class="sm-sr-only">${esc(task.title)} model results</caption><thead><tr><th scope="col" class="sm-lb-rank">#</th><th scope="col">Model</th>${head}</tr></thead><tbody>${body || `<tr><td colspan="${columns.length + 2}" class="sm-lb-empty">No models match your search. Try another name or provider.</td></tr>`}</tbody></table></div>`;
   }
 
   function renderFunnel(task) {
@@ -88,14 +103,20 @@
       t.max_dp_shell_kpa != null ? `ΔP shell ≤ ${t.max_dp_shell_kpa} kPa` : null,
     ].filter(Boolean).join(" · ");
     const date = (iso) => (iso ? iso.slice(0, 10) : "–");
+    const s = task.suite;
+    const reference = s
+      ? s.groups.map((g) => `${g} ${(s.reference_mean_score[g] ?? NaN).toFixed(2)}`).join(" · ")
+      : null;
     const facts = [
       ["Simulator", task.simulator_version || "legacy"],
       ["Score", task.score_version || "legacy"],
-      ["Requirements", targets || "–"],
+      s ? ["Tasks", `${s.n_tasks}, one answer each (${s.groups.join(" / ")})`] : ["Requirements", targets || "–"],
+      ...(s ? [["Reference design", reference]] : []),
       ["Runs", `${task.runs} across ${task.models} models`],
       ["Recorded", `${date(task.first_run)} to ${date(task.last_run)}`],
     ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
-    return `<h2 class="sm-lb-title">${esc(task.title)}</h2>` +
+    const badge = task.archived ? ' <span class="sm-lb-chip">Archive</span>' : "";
+    return `<h2 class="sm-lb-title">${esc(task.title)}${badge}</h2>` +
       `<p class="sm-lb-slug"><code>${esc(task.slug)}</code> · <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results/${encodeURIComponent(task.trackId)}/${encodeURIComponent(task.slug)}">task files</a></p>` +
       `<dl class="sm-lb-facts">${facts}</dl>` +
       `<section class="sm-charts" aria-label="Interactive model comparisons"></section>` +
@@ -116,8 +137,11 @@
     try { fromHash = decodeURIComponent(location.hash.slice(1)); } catch (_) { /* Ignore malformed links. */ }
     if (tasks.some((t) => t.slug === fromHash)) state.slug = fromHash;
 
-    const options = tasks.map((t) =>
-      `<option value="${esc(t.slug)}">${esc(t.slug)} (${esc(t.track)}, ${t.runs} runs)</option>`).join("");
+    const option = (t) =>
+      `<option value="${esc(t.slug)}">${esc(t.slug)} (${esc(t.track)}, ${t.runs} runs)</option>`;
+    const current = tasks.filter((t) => !t.archived), archived = tasks.filter((t) => t.archived);
+    const options = (current.length ? `<optgroup label="Current">${current.map(option).join("")}</optgroup>` : "") +
+      (archived.length ? `<optgroup label="Archive">${archived.map(option).join("")}</optgroup>` : "");
     root.innerHTML =
       `<div class="sm-lb-picker"><label for="sm-lb-task">Task</label><select id="sm-lb-task">${options}</select>` +
       `<span class="sm-lb-built">Built ${esc(data.generated_at.slice(0, 10))}</span></div><div class="sm-lb-body"></div>`;

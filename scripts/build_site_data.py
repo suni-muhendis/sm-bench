@@ -177,7 +177,29 @@ def _distribution(values: List[float]) -> Optional[Dict[str, Any]]:
     ))
 
 
-def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _suite_columns(group: List[Dict[str, Any]], suite: Dict[str, Any]) -> Dict[str, Any]:
+    """Per-group means and completeness for a suite: one answer per task and repeat."""
+    groups = suite.get("groups") or {}
+    labels = list(dict.fromkeys(groups.values()))
+    scored = [r for r in group if r.get("status") not in NOT_RUN]
+    by_label = {label: [_score(r) for r in scored if r.get("task_group") == label] for label in labels}
+    gate = {label: [r for r in group if r.get("task_group") == label] for label in labels}
+    tasks_done = len({r.get("task_id") for r in group})
+    return {
+        "group_scores": {label: _round(_mean(v)) for label, v in by_label.items()},
+        "group_gate_pct": {
+            label: _round(_pct(sum(
+                _as_dict(r.get("reward_components")).get("gate_passed") == 1.0 for r in rs
+            ), len(rs)), 2)
+            for label, rs in gate.items()
+        },
+        "tasks_done": tasks_done,
+        "complete": tasks_done >= int(suite.get("n_tasks") or len(groups)),
+    }
+
+
+def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any],
+                 suite: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     by_model: Dict[str, List[Dict[str, Any]]] = {}
     for record in records:
         by_model.setdefault(str(record.get("model_name") or "Unknown"), []).append(record)
@@ -228,8 +250,13 @@ def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any]) -> List[Di
                 },
             },
         })
+        if suite is not None:
+            rows[-1].update(_suite_columns(group, suite))
 
     rows.sort(key=lambda row: (
+        # A model that has not answered every task of a suite is not ranked
+        # against those that have: its mean covers different tasks.
+        not row.get("complete", True),
         -(row["mean_score"] if row["mean_score"] is not None else -1),
         -(row["valid_pct"] or 0),
         -(row["best_score"] or 0),
@@ -258,20 +285,32 @@ def build(results_root: Path) -> Dict[str, Any]:
         tasks = []
         for task_dir in sorted(p for p in track_dir.iterdir() if p.is_dir()):
             task_path = task_dir / "task.json"
+            suite_path = task_dir / "suite.json"
             records = _read_records(task_dir)
-            if not task_path.is_file() or not records:
+            suite = (json.loads(suite_path.read_text(encoding="utf-8-sig"))
+                     if suite_path.is_file() else None)
+            if not records or (suite is None and not task_path.is_file()):
                 continue
-            task = json.loads(task_path.read_text(encoding="utf-8-sig"))
+            # A suite has no single task: requirements come from each record's task.
+            task = suite if suite is not None else json.loads(task_path.read_text(encoding="utf-8-sig"))
             timestamps = sorted(str(r["timestamp"]) for r in records if r.get("timestamp"))
             statuses: Dict[str, int] = {}
             for record in records:
                 status = str(record.get("status") or "unknown")
                 statuses[status] = statuses.get(status, 0) + 1
             versioned = next((r for r in records if r.get("simulator_version")), {})
-            leaderboard = _leaderboard(records, task)
+            leaderboard = _leaderboard(records, task, suite)
             tasks.append({
                 "slug": task_dir.name,
                 "title": _task_title(task_dir),
+                # Single-task sets predate the suites; the site lists them as an archive.
+                "kind": "suite" if suite is not None else "task",
+                "archived": suite is None,
+                "suite": {
+                    "n_tasks": suite.get("n_tasks") or len(suite.get("groups") or {}),
+                    "groups": list(dict.fromkeys((suite.get("groups") or {}).values())),
+                    "reference_mean_score": suite.get("reference_mean_score") or {},
+                } if suite is not None else None,
                 "task_set_version": task.get("task_set_version") or versioned.get("task_set_version"),
                 "score_version": task.get("score_version") or versioned.get("score_version"),
                 "simulator_version": versioned.get("simulator_version"),
@@ -293,6 +332,7 @@ def build(results_root: Path) -> Dict[str, Any]:
             })
         if tasks:
             tasks.sort(key=lambda t: t["last_run"] or "", reverse=True)
+            tasks.sort(key=lambda t: t["archived"])   # stable: current first, newest first
             tracks.append({"id": track, "label": label, "tasks": tasks})
 
     return {

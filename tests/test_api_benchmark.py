@@ -701,3 +701,54 @@ def test_truncation_is_distinguishable_after_the_fact(tmp_path):
     assert truncated["status"] != empty["status"]
     assert truncated["usage"]["completion_tokens"] >= 2048
     assert empty["usage"]["completion_tokens"] == 0
+
+
+def _make_suite_unit(root, slug="he_suite"):
+    suite_dir = os.path.join(root, "zero_shot", slug)
+    os.makedirs(suite_dir, exist_ok=True)
+    base = {
+        "score_version": "heat_exchanger_score_v4",
+        "target_heat_duty": 150000.0, "max_dp_tube": 50000.0, "max_dp_shell": 50000.0,
+        "gate_share": 0.3, "cost_good": 2000.0, "cost_bad": 8000.0,
+        "warning_penalty_per_warning": 0.1,
+        "operating_conditions": {"m_dot_hot": 1.0, "m_dot_cold": 1.0,
+                                 "T_hot_in": 80.0, "T_cold_in": 20.0},
+    }
+    tasks = [{"task_id": "t-a", **base}, {"task_id": "t-b", **base}]
+    with open(os.path.join(suite_dir, "tasks.jsonl"), "w", encoding="utf-8") as f:
+        f.write("\n".join(json.dumps(t) for t in tasks) + "\n")
+    suite = {
+        "suite_id": "suite_test_v1",
+        "environment": "heat_exchanger",
+        "prompt_builder": "sm_heat_exchanger.prompts.build_heat_exchanger_prompt",
+        "groups": {"t-a": "easy", "t-b": "hard"},
+    }
+    with open(os.path.join(suite_dir, "suite.json"), "w", encoding="utf-8") as f:
+        json.dump(suite, f)
+    return slug, tasks
+
+
+def test_run_benchmark_suite_runs_every_task_with_its_own_prompt(tmp_path):
+    from sm_heat_exchanger.prompts import build_heat_exchanger_prompt
+
+    slug, tasks = _make_suite_unit(str(tmp_path))
+    written = run_benchmark(
+        prompt_slug=slug,
+        model_specs=[{"name": "dummy"}],
+        client_factory=lambda spec: DummyRandomClient(),
+        repeats=2,
+        results_root=str(tmp_path),
+        use_live_prices=False,
+    )
+    records = [json.loads(line) for line in open(written[0], encoding="utf-8")]
+    assert [r["task_id"] for r in records] == ["t-a", "t-a", "t-b", "t-b"]
+    assert {r["suite_id"] for r in records} == {"suite_test_v1"}
+    assert [r["task_group"] for r in records] == ["easy", "easy", "hard", "hard"]
+    for rec, task in zip(records[::2], tasks):
+        # The prompt is the environment's own, built from the bare task: the
+        # group label and the suite's environment key never reach the model.
+        assert rec["prompt_text"] == build_heat_exchanger_prompt(task)
+        assert "easy" not in rec["prompt_text"] and "hard" not in rec["prompt_text"]
+        assert rec["environment"] == "heat_exchanger"
+        assert rec["score_version"] == "heat_exchanger_score_v4"
+        assert rec["status"] in _VALID_STATUS

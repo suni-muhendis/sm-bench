@@ -6,6 +6,25 @@ different simulator or score versions comparable.
 
 ## [Unreleased]
 
+### Added
+
+- Task suites: a `results/<track>/<slug>/` folder with `suite.json` and
+  `tasks.jsonl` runs every task once per repeat, each with the prompt the
+  environment builds from it. Records carry `suite_id` and `task_group`.
+- `heat_exchanger_suite_v1`: 30 heat-exchanger tasks at three difficulty
+  levels, scored with `heat_exchanger_score_v4`, with results for 14 model
+  configurations.
+- Provider `local` (`TransformersClient`): open-weight models and PEFT adapters
+  run greedily on a GPU, pinned to a Hugging Face revision. Install with
+  `pip install -e .[local]`.
+- `SM_heat_exchanger_v1`, the first Suni Muhendis model, in the model registry.
+
+### Changed
+
+- The leaderboard lists suites first, with a mean score per difficulty level,
+  and the single-task sets under **Archive**. A model that has not answered
+  every task of a suite is shown but not ranked.
+
 ## [0.8.0] - 2026-09-29
 
 SM-Bench is now the benchmark application only. The evaluation contract and
