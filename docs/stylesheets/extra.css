@@ -519,3 +519,4 @@
 [data-md-color-scheme="slate"] .md-typeset .sm-x-caveat .sm-x-eyebrow { color: #f2c25c; }
 .md-typeset .sm-x-caveat ul { margin: .5rem 0 0; padding-left: 1.1rem; }
 .md-typeset .sm-x-caveat li { margin: .3rem 0; font-size: .7rem; color: var(--x-ink); }
+.sm-x-archived { display: inline-block; vertical-align: middle; margin-left: .5rem; padding: .1rem .55rem; border-radius: 1rem; font-size: .7rem; font-weight: 600; background: rgb(255 255 255 / 14%); color: #f3c9a9; }

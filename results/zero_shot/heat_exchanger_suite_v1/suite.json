@@ -44,5 +44,7 @@
   "hidden_models": {
     "qwen-2.5-7b-instruct": "Same model as the base of SM_heat_exchanger_v1, served by a third-party API; the base run on the same GPU is the one shown.",
     "qwen3.8-max-0902__reasoning-minimal": "Stopped after 25 of 30 tasks: at its lowest reasoning effort it still spent about 7,300 tokens per answer."
-  }
+  },
+  "archived": true,
+  "superseded_by": "heat_exchanger_suite_v2"
 }

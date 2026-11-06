@@ -30,7 +30,7 @@ classifiers = [
 # Pin tags, not branches: simulator and score behaviour is versioned deliberately.
 dependencies = [
     "sm-core @ git+https://github.com/suni-muhendis/sm-core.git@v0.8.0",
-    "sm-heat-exchanger[samplers] @ git+https://github.com/suni-muhendis/sm-heat-exchanger.git@v0.8.0",
+    "sm-heat-exchanger[samplers] @ git+https://github.com/suni-muhendis/sm-heat-exchanger.git@v0.9.0",
     "openai>=1.0.0",
     "python-dotenv>=1.0.0",
     "streamlit",

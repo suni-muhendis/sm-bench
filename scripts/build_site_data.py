@@ -352,9 +352,10 @@ def build(results_root: Path, models_config: Optional[Path] = None) -> Dict[str,
             tasks.append({
                 "slug": task_dir.name,
                 "title": _task_title(task_dir),
-                # Single-task sets predate the suites; the site lists them as an archive.
+                # Single-task sets predate the suites and a suite can be superseded;
+                # the site lists both as an archive.
                 "kind": "suite" if suite is not None else "task",
-                "archived": suite is None,
+                "archived": suite is None or bool(suite.get("archived")),
                 "suite": {
                     "n_tasks": suite.get("n_tasks") or len(suite.get("groups") or {}),
                     "groups": list(dict.fromkeys((suite.get("groups") or {}).values())),

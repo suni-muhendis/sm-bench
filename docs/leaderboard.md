@@ -13,11 +13,12 @@ hide:
 Each model receives a design task (operating conditions, a duty target,
 pressure-drop limits and cost anchors) and answers once, with no feedback and
 no second attempt. The answer goes through schema checks, design-rule checks,
-a physics simulation and a versioned score. A design that fails any stage
-scores 0; one that meets every requirement earns 0.3, and a cheaper,
-better-engineered design earns up to 1.
+a physics simulation and a versioned score (`heat_exchanger_score_v5`). A
+design that fails a check scores 0; one that misses a requirement earns at most
+0.15; one that meets every requirement earns 0.3, and up to 1 the closer its
+cost comes to that of a well-engineered reference design.
 
-The current benchmark is **heat_exchanger_suite_v1**: 30 different tasks at
+The current benchmark is **heat_exchanger_suite_v2**: 30 different tasks at
 three difficulty levels. Next to frontier and open models it includes
 [SM_heat_exchanger_v1](https://huggingface.co/SM-AI/SM_heat_exchanger_v1), the
 first Suni Muhendis model, and its untuned base model, so the effect of
@@ -27,7 +28,7 @@ Each task set is ranked on its own, because each pins its own simulator and
 score version. The earlier single-task sets, which send one prompt many times,
 are kept under **Archive**.
 
-<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261106-split2" markdown="0">
+<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261106-v5a" markdown="0">
   <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
 

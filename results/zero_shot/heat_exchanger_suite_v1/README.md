@@ -1,5 +1,10 @@
 # Heat exchanger suite v1
 
+> **Archived.** Superseded by
+> [`heat_exchanger_suite_v2`](../heat_exchanger_suite_v2/README.md): the same
+> 30 tasks and the same answers, judged with `heat_exchanger_score_v5`. The
+> records here stay as they were.
+
 Thirty heat-exchanger design tasks, ten at each of three difficulty levels
 (`easy`, `medium`, `hard`). Each model answers every task once, with no
 feedback, and every answer is judged by the `heat_exchanger` environment of

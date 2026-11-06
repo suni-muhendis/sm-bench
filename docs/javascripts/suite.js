@@ -83,7 +83,7 @@
     const date = (iso) => (iso ? iso.slice(0, 10) : "–");
     return `<header class="sm-x-head">
       <div><p class="sm-x-eyebrow">Task suite · zero-shot</p>
-      <h2 class="sm-x-title">${esc(task.title)}</h2>
+      <h2 class="sm-x-title">${esc(task.title)}${task.archived ? ' <span class="sm-x-archived">Archive</span>' : ""}</h2>
       <div class="sm-x-tags"><span>${esc(task.score_version || "")}</span><span>simulator ${esc(task.simulator_version || "")}</span><span>recorded ${date(task.last_run)}</span>
       <a href="https://github.com/suni-muhendis/sm-bench/tree/main/results/${encodeURIComponent(task.trackId)}/${encodeURIComponent(task.slug)}">task files ↗</a></div></div>
     </header>`;
@@ -158,7 +158,7 @@
       <ul>
         <li><b>Different tasks behind the two scores.</b> ${esc(name(featured))} met the requirements ${where}; the other models also met them on harder tasks. Its higher score when met is measured on the easiest tasks.</li>
         <li><b>It knows this referee.</b> It was trained against the same simulator and cost model on other tasks. The other models answer zero-shot: the prompt gives the cost thresholds but not how cost is computed, so they cannot size a design to cost.</li>
-        ${base ? `<li><b>Meeting the requirements is not good design on its own.</b> ${esc(name(base))}, the untuned base model, meets them on every easy task by returning nearly the same oversized design for every task; the loose easy limits let it pass, and it earns nothing for cost.</li>` : ""}
+        ${base ? `<li><b>Meeting the requirements is not good design on its own.</b> ${esc(name(base))}, the untuned base model, meets them on every easy task by returning nearly the same oversized design for every task; the loose easy limits let it pass, but its designs cost many times what the task needs.</li>` : ""}
         <li><b>The other models are not at their best.</b> They run at their lowest reasoning effort and answer each task once. More reasoning, or the cost model in the prompt, could change these results; both are next.</li>
       </ul>
     </aside>`;
@@ -241,7 +241,23 @@
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(r);
     });
-    const used = [];
+    // Labels try four places around their point and take the first that covers
+    // no other point and no earlier label.
+    const centres = [...groups.values()].map((g) => [sx(o.xs(g[0])), sy(o.ys(g[0]))]);
+    const boxes = [];
+    const place = (cx, cy, text) => {
+      const w = 7 * text.length + 4, h = 14;
+      const tries = [[cx + 10, cy - 10, "start"], [cx + 10, cy + 20, "start"], [cx - 10, cy - 10, "end"], [cx - 10, cy + 20, "end"]];
+      for (const [x, y, anchor] of tries) {
+        const box = [anchor === "end" ? x - w : x, y - h + 3, w, h];
+        const hitsPoint = centres.some(([px, py]) => (px !== cx || py !== cy) &&
+          px > box[0] - 8 && px < box[0] + box[2] + 8 && py > box[1] - 8 && py < box[1] + box[3] + 8);
+        const hitsLabel = boxes.some((b) => box[0] < b[0] + b[2] && b[0] < box[0] + box[2] && box[1] < b[1] + b[3] && b[1] < box[1] + box[3]);
+        if (!hitsPoint && !hitsLabel && box[0] > L && box[0] + box[2] < W - 4) { boxes.push(box); return [x, y, anchor]; }
+      }
+      boxes.push([cx + 10, cy - 21, w, h]);
+      return [cx + 10, cy - 10, "start"];
+    };
     const dots = [...groups.values()].map((grp) => {
       const lead = grp.find((r) => role(r) === "featured") || grp.find((r) => role(r) === "base") || grp[0];
       const cx = sx(o.xs(lead)), cy = sy(o.ys(lead));
@@ -251,11 +267,9 @@
       const labelled = grp.filter((r) => o.label(r));
       let lbl = "";
       if (labelled.length) {
-        // Put the label above the point, or below it when another label sits close by.
-        const near = used.some(([ux, uy]) => Math.abs(ux - cx) < 150 && Math.abs(uy - (cy - 10)) < 14);
-        const ly = near ? cy + (grp.length > 1 ? 34 : 22) : cy - 10;
-        used.push([cx, ly]);
-        lbl = `<text class="sm-x-dlabel" x="${cx + 9}" y="${ly}">${esc(labelled.map(name).join(", "))}</text>`;
+        const text = labelled.map(name).join(", ");
+        const [lx, ly, anchor] = place(cx, cy, text);
+        lbl = `<text class="sm-x-dlabel" x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(text)}</text>`;
       }
       return `<g class="sm-x-pt ${markClass(lead)}" tabindex="0" data-tip="${tipAttr}"><circle cx="${cx}" cy="${cy}" r="14" class="sm-x-hit"/><circle cx="${cx}" cy="${cy}" r="6"/>${count}${lbl}</g>`;
     }).join("");
