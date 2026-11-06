@@ -290,12 +290,11 @@ def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any],
             rows[-1]["display"] = {k: shown[k] for k in ("label", "url", "note", "role") if k in shown}
 
     if suite is not None:
-        # A suite has no single ranking: rows are listed by the share of answers
-        # that met every requirement, then by the quality of those answers.
+        # A suite lists rows by the mean score over all its tasks (the mean of
+        # the level scores when the levels are equal in size).
         rows.sort(key=lambda row: (
             not row.get("complete", True),
-            -(row.get("gate_pct") or 0),
-            -(row.get("quality_when_met") or 0),
+            -(row["mean_score"] if row["mean_score"] is not None else -1),
         ))
         return rows
     rows.sort(key=lambda row: (

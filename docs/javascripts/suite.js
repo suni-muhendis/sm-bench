@@ -2,9 +2,9 @@
 // leaderboard.js calls SMSuite.render(container, task) and SMSuite stays inside
 // that container. Single-task (archive) pages keep the classic view.
 //
-// A suite has no single ranking. Two measures are reported side by side:
-// how often a model's design meets every requirement, and how good the designs
-// that do are (their mean score). Rows are listed by the first, then the second.
+// A suite reports the mean score per difficulty level and, separately, what a
+// model's working designs score and how often its designs meet every
+// requirement. Rows are listed by the mean of the level scores.
 (function () {
   "use strict";
 
@@ -74,8 +74,8 @@
   const tipHtml = (title, rows) =>
     esc(`<strong>${title}</strong>` + rows.map(([k, v]) => `<span><em>${k}</em><b>${v}</b></span>`).join(""));
   const rowTip = (r, extra = []) => tipHtml(esc(name(r)), [
-    ["Requirements met", pct(r.gate_pct)], ["Score when met", num(r.quality_when_met)],
-    ...extra, ...(effort(r) ? [["Reasoning", effort(r)]] : []),
+    ...extra, ["Score when met", num(r.quality_when_met)], ["Requirements met", pct(r.gate_pct)],
+    ...(effort(r) ? [["Reasoning", effort(r)]] : []),
   ]);
 
   // ── header, KPIs, spotlight ───────────────────────────────────────────
@@ -102,12 +102,12 @@
     return `<div class="sm-x-kpis">` +
       tile("Tasks", s.n_tasks, `${s.groups.map(cap).join(" · ")} · one answer each`) +
       tile("Models", rows.length, "evaluated zero-shot, no ranking") +
-      (mostMet ? tile("Most requirements met", pct(mostMet.gate_pct), esc(name(mostMet))) : "") +
       (bestQ ? tile("Best score when met", num(bestQ.quality_when_met, 2), esc(name(bestQ))) : "") +
       (featured && base ? tile("Effect of fine-tuning",
         `${num(base.quality_when_met, 2)} → ${num(featured.quality_when_met, 2)}`,
         `score when met; requirements met ${pct(base.gate_pct)} → ${pct(featured.gate_pct)}`, true) : "") +
       (ceiling != null ? tile("Reference design", num(ceiling, 2), "meets every requirement; mean score") : "") +
+      (mostMet ? tile("Most requirements met", pct(mostMet.gate_pct), esc(name(mostMet))) : "") +
       `</div>`;
   }
 
@@ -115,7 +115,7 @@
     if (!featured) return "";
     const s = task.suite;
     const series = [[featured, "is-featured"], [base, "is-base"], [rival, "is-other"]].filter(([r]) => r);
-    const legend = series.map(([r, c]) => `<span><i class="sm-x-sw ${c}"></i>${esc(name(r))}${r === rival ? " <small>most requirements met</small>" : ""}</span>`).join("") +
+    const legend = series.map(([r, c]) => `<span><i class="sm-x-sw ${c}"></i>${esc(name(r))}${r === rival ? " <small>best other model</small>" : ""}</span>`).join("") +
       `<span><i class="sm-x-sw is-ref"></i>reference design</span>`;
     const groups = s.groups.map((g) => {
       const ref = s.reference_mean_score[g];
@@ -135,9 +135,9 @@
         <h3>${esc(name(featured))}</h3>
         <p class="sm-x-muted">${esc(d.note || "")}. Trained against this referee on other heat-exchanger tasks; none of these 30 tasks was used to train it.</p>
         <div class="sm-x-spot-stats">
-          <div><b>${pct(featured.gate_pct)}</b><span>requirements met</span></div>
           <div><b>${num(featured.quality_when_met, 2)}</b><span>score when met</span></div>
           <div><b>${featured.distinct_designs}</b><span>distinct designs</span></div>
+          <div><b>${pct(featured.gate_pct)}</b><span>requirements met</span></div>
         </div>
         <p class="sm-x-muted">Its working designs are the most cost-efficient in the suite, but it meets the requirements less often than most models: it sizes close to the duty target and sometimes falls just short.</p>
         ${d.url ? `<a class="sm-x-btn" href="${esc(d.url)}" target="_blank" rel="noopener">View on Hugging Face ↗</a>` : ""}
@@ -165,7 +165,7 @@
   }
 
   // ── charts ────────────────────────────────────────────────────────────
-  const VIEWS = [["compare", "Compare"], ["tradeoff", "Requirements vs score"], ["heatmap", "Heatmap"], ["tasks", "Task by task"], ["efficiency", "Cost & speed"]];
+  const VIEWS = [["compare", "Compare"], ["heatmap", "Heatmap"], ["tasks", "Task by task"], ["efficiency", "Cost & speed"], ["tradeoff", "Requirements vs score"]];
 
   // Horizontal bars ordered by the chosen measure; rows glide when it changes.
   // Deliberately no rank numbers: the suite reports measures, not a winner.
@@ -186,7 +186,7 @@
 
   function heatmap(task, rows) {
     const s = task.suite;
-    const cols = [["gate", "Req. met"], ["quality", "Score when met"], ...s.groups.map((g) => [g, cap(g)])];
+    const cols = [...s.groups.map((g) => [g, cap(g)]), ["quality", "Score when met"], ["gate", "Req. met"]];
     const head = cols.map(([, l]) => `<th scope="col">${l}</th>`).join("");
     const body = rows.map((r) => `<tr class="${markClass(r)}"><th scope="row">${esc(name(r))}</th>` + cols.map(([k, l]) => {
       const m = metricFor(k), v = m.get(r);
@@ -303,29 +303,30 @@
 
   function efficiency(task, rows, axis) {
     const xs = (r) => (axis === "cost" ? (r.cost_usd != null && r.runs ? r.cost_usd / r.runs : null) : r.p50_latency_s);
-    const mostMet = best(rows, (r) => r.gate_pct);
+    const top = best(rows, (r) => r.mean_score);
     return scatter(rows, {
-      xs, ys: (r) => r.gate_pct, log: true,
+      xs, ys: (r) => r.mean_score, log: true,
       xLabel: axis === "cost" ? "Cost per task (log scale)" : "Median latency per answer (log scale)",
-      yLabel: "Requirements met",
+      yLabel: "Mean of level scores",
       xDomain: (vals) => { const lo = Math.floor(Math.min(...vals)), hi = Math.ceil(Math.max(...vals)); return [lo, hi === lo ? hi + 1 : hi]; },
-      yDomain: [0, 100],
+      yDomain: [0, 1],
       xTicks: (a, b) => steps(a, b, 1, (e) => e).map(([e]) => {
         const v = 10 ** e;
         return [v, axis === "cost" ? (v < 0.01 ? `$${v}` : `$${v.toFixed(2)}`) : `${v} s`];
       }),
-      yTicks: steps(0, 100, 20, (v) => `${v}%`),
-      label: (r) => role(r) || r === mostMet,
+      yTicks: steps(0, 1, 0.2, (v) => v.toFixed(1)),
+      label: (r) => role(r) || r === top,
       note: (n) => `${n} model${n > 1 ? "s" : ""} without ${axis === "cost" ? "a recorded price" : "latency data"} not shown.`,
-      tipFor: (r) => rowTip(r, [[axis === "cost" ? "Cost per task" : "Median latency", axis === "cost" ? `$${xs(r).toFixed(4)}` : `${xs(r).toFixed(1)} s`], ["Total cost", usd(r.cost_usd)]]),
+      tipFor: (r) => rowTip(r, [["Mean of level scores", num(r.mean_score)], [axis === "cost" ? "Cost per task" : "Median latency", axis === "cost" ? `$${xs(r).toFixed(4)}` : `${xs(r).toFixed(1)} s`], ["Total cost", usd(r.cost_usd)]]),
     });
   }
 
   // ── table ─────────────────────────────────────────────────────────────
   const COLS = [
-    ["gate_pct", "Req. met", "gatebar"], ["quality_when_met", "Score when met", "score"],
     ["group:easy", "Easy", "heat"], ["group:medium", "Medium", "heat"], ["group:hard", "Hard", "heat"],
+    ["quality_when_met", "Score when met", "score"],
     ["valid_pct", "Valid", "pct"], ["cost_usd", "Cost", "usd"], ["p50_latency_s", "Latency", "sec"],
+    ["gate_pct", "Req. met", "gatebar"],
   ];
   const colVal = (r, k) => (k.startsWith("group:") ? (r.group_scores || {})[k.slice(6)] : r[k]);
 
@@ -362,14 +363,14 @@
     const rows = task.leaderboard;
     const featured = rows.find((r) => role(r) === "featured");
     const base = rows.find((r) => role(r) === "base");
-    const rival = best(rows.filter((r) => !role(r)), (r) => r.gate_pct);
-    const state = { view: "compare", metric: "gate", axis: "cost", sort: null, query: "" };
+    const rival = best(rows.filter((r) => !role(r)), (r) => r.mean_score);
+    const state = { view: "compare", metric: task.suite.groups[0], axis: "cost", sort: null, query: "" };
     try {
       // ?view=heatmap etc. opens a chart directly, so a view can be linked.
       const asked = new URLSearchParams(location.search).get("view");
       if (VIEWS.some(([id]) => id === asked)) state.view = asked;
     } catch (_) { /* no URL API: keep the default view */ }
-    const metricKeys = [["gate", "Requirements met"], ["quality", "Score when met"], ...task.suite.groups.map((g) => [g, cap(g)])];
+    const metricKeys = [...task.suite.groups.map((g) => [g, cap(g)]), ["quality", "Score when met"], ["gate", "Requirements met"]];
 
     root.innerHTML = header(task) + kpis(task, rows, featured, base) + spotlight(task, featured, base, rival) + caveats(task, featured) +
       `<section class="sm-x-panel" aria-label="Interactive charts">
@@ -379,7 +380,7 @@
       <section class="sm-x-panel" aria-label="All results">
         <div class="sm-x-panel-head"><h3>All results</h3><input type="search" class="sm-x-search" placeholder="Find a model…" aria-label="Find a model"></div>
         <div class="sm-x-table-wrap"></div>
-        <p class="sm-x-note"><b>Req. met:</b> share of the 30 answers whose design reaches the duty target and stays inside both pressure-drop limits. <b>Score when met:</b> mean score of those answers (0.3 for a design that only meets the requirements, up to 1 for a cheap, well-engineered one). <b>Easy / Medium / Hard:</b> mean score per level, failed designs counting as 0. There is no overall ranking; rows are listed by requirements met, then score when met. Select a column to sort.</p>
+        <p class="sm-x-note"><b>Easy / Medium / Hard:</b> mean score per level; a failed design counts as 0 and a missed requirement earns at most 0.15. <b>Score when met:</b> mean score of the answers that met every requirement (0.3 for a design that only meets them, up to 1 for a cheap, well-engineered one). <b>Req. met:</b> share of the 30 answers that reach the duty target within both pressure-drop limits. Rows are listed by the mean of the three level scores; select a column to sort.</p>
       </section>`;
 
     const chart = root.querySelector(".sm-x-chart"), controls = root.querySelector(".sm-x-controls");

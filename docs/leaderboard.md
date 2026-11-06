@@ -28,7 +28,7 @@ Each task set is ranked on its own, because each pins its own simulator and
 score version. The earlier single-task sets, which send one prompt many times,
 are kept under **Archive**.
 
-<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261106-v5a" markdown="0">
+<div id="sm-leaderboard" data-src="../data/leaderboard.json?v=20261106-v5b" markdown="0">
   <p class="sm-lb-status" role="status">Loading results…</p>
 </div>
 
@@ -38,11 +38,16 @@ are kept under **Archive**.
 
 | Column | Meaning |
 |---|---|
-| Mean score | Average score over every attempt except those that never ran (client errors and token-limit stops). Failed designs count as `0.0`. |
-| Valid design | Share of attempts that passed schema, design-rule checks, and simulation. |
-| Requirements met | Share of attempts whose design reaches the duty target and stays inside both pressure-drop limits. |
-| Best | Highest score any single attempt reached. |
-| Cost | Total spend for the recorded runs, as charged or priced at run time. |
+| Easy / Medium / Hard | Mean score over the ten tasks of each level. A design that fails a check scores 0; one that misses a requirement earns at most 0.15. |
+| Score when met | Mean score of the answers whose design met every requirement: 0.3 for a design that only meets them, up to 1 the closer its cost comes to a well-engineered reference design. |
+| Valid | Share of answers that passed schema checks, design-rule checks and simulation. |
+| Cost | Total spend for the recorded answers, as charged or priced at run time. |
+| Latency | Median time to answer. |
+| Req. met | Share of answers whose design reaches the duty target within both pressure-drop limits. |
+
+Rows are listed by the mean of the three level scores. Select a column to
+sort by it. Archived single-task sets keep their original table, with a mean
+and best score over repeated attempts at one task.
 
 The numbers are computed from the run records under
 [`results/`](../results/EXPERIMENT_TRACKS.md) each time the site is built.
@@ -52,25 +57,20 @@ individual runs, raw responses, and cost breakdowns, use the
 
 ## Exploring the charts
 
-Select a task, then choose a chart and the model configurations to compare.
-Model selection applies to the charts; the search field below filters the
-detailed table independently. Switching tasks resets the chart selection.
-Hover over a mark or focus it with the keyboard to inspect its values. Use
-**View chart data** for an accessible numeric table or **Download SVG** to
-save the selected chart.
+Hover over a mark, or focus it with the keyboard, to see its values. Each chart
+can be linked directly with `?view=` (for example `?view=tasks`).
 
-- **Score comparison:** mean and best score on a fixed 0–1 scale.
-- **Validity & requirements:** simulated designs and designs meeting all
-  requirements, both as percentages of all recorded attempts.
-- **Score distribution:** inclusive quartiles and median, with whiskers at
-  the minimum and maximum. Failed designs count as zero; client errors and
-  token-limit stops are excluded. These are summaries, not individual runs.
-- **Cost & speed:** mean score against average recorded cost per run or
-  median latency. Cost comparisons omit models with any unpriced runs;
-  latency uses positive recorded measurements only.
-- **Run outcomes:** each model's recorded attempts, broken down by status.
-  A completed simulation does not necessarily meet the task requirements.
+- **Compare:** every model as a bar, for the level or measure you choose; the
+  bars re-order as you switch. The reference design's score is marked.
+- **Heatmap:** level scores, score when met and requirements met for every
+  model, with the reference design underneath.
+- **Task by task:** one cell per task and model. A cell at 0.3 or above met
+  every requirement.
+- **Cost & speed:** mean of the level scores against cost per task or median
+  latency, both on a log scale. Models without a recorded price are left out.
+- **Requirements vs score:** how often a model's design meets every
+  requirement against what its working designs score, with the reference
+  design for scale.
 
-Charts show recorded samples, not confidence intervals or claims of statistical
-significance. Compare run counts alongside scores. All views stay within the
-selected task and use the same versioned results as the table.
+Charts show recorded answers, one per task and model, not confidence
+intervals. Close scores, within a few hundredths, should be read as ties.
