@@ -28,6 +28,11 @@ different simulator or score versions comparable.
   its base model, and interactive charts (ranking by level, heatmap, task by
   task, cost and speed; `?view=` links a chart). A suite can hide a run from
   the site with `hidden_models`; the record stays in the repository.
+- A suite has no overall ranking and no mean score. It reports two separate
+  measures, the share of answers that meet every requirement and the mean score
+  of those answers ("quality when met"), next to the mean score per difficulty
+  level, and lists models by the first, then the second. A new chart plots
+  one against the other, with the reference design for scale.
 
 ## [0.8.0] - 2026-09-29
 

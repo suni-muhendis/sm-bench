@@ -204,11 +204,18 @@ def _suite_columns(group: List[Dict[str, Any]], suite: Dict[str, Any]) -> Dict[s
     by_label = {label: [_score(r) for r in scored if r.get("task_group") == label] for label in labels}
     gate = {label: [r for r in group if r.get("task_group") == label] for label in labels}
     tasks_done = len({r.get("task_id") for r in group})
+    passed = [_score(r) for r in group
+              if _as_dict(r.get("reward_components")).get("gate_passed") == 1.0]
     per_task = {}
     for r in group:
         if r.get("status") not in NOT_RUN:
             per_task.setdefault(str(r.get("task_id")), []).append(_score(r))
     return {
+        # Share of answers that met every requirement (the gate), and the mean
+        # score of those answers: whether a model finds a working design, and
+        # how good the working designs are, as two separate measures.
+        "gate_pct": _round(_pct(len(passed), len(group)), 2),
+        "quality_when_met": _round(_mean(passed)),
         # Mean per task over repeats: the points of the per-task chart.
         "task_scores": {t: _round(_mean(v)) for t, v in per_task.items()},
         "group_scores": {label: _round(_mean(v)) for label, v in by_label.items()},
@@ -282,9 +289,16 @@ def _leaderboard(records: List[Dict[str, Any]], task: Dict[str, Any],
         if shown:
             rows[-1]["display"] = {k: shown[k] for k in ("label", "url", "note", "role") if k in shown}
 
+    if suite is not None:
+        # A suite has no single ranking: rows are listed by the share of answers
+        # that met every requirement, then by the quality of those answers.
+        rows.sort(key=lambda row: (
+            not row.get("complete", True),
+            -(row.get("gate_pct") or 0),
+            -(row.get("quality_when_met") or 0),
+        ))
+        return rows
     rows.sort(key=lambda row: (
-        # A model that has not answered every task of a suite is not ranked
-        # against those that have: its mean covers different tasks.
         not row.get("complete", True),
         -(row["mean_score"] if row["mean_score"] is not None else -1),
         -(row["valid_pct"] or 0),
