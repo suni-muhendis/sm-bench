@@ -514,3 +514,8 @@
 .sm-x-ref-pt rect { fill: var(--x-card); stroke: var(--x-ink); stroke-width: 2; }
 .sm-x-ref-pt:focus { outline: none; }
 .sm-x-ref-pt:hover rect, .sm-x-ref-pt:focus-visible rect { fill: var(--x-soft); }
+.sm-x-caveat { margin: 0 0 1rem; padding: 1rem 1.3rem; border-radius: var(--x-radius); background: color-mix(in srgb, #eda100 9%, var(--x-card)); border: 1px solid color-mix(in srgb, #eda100 35%, var(--x-line)); }
+.md-typeset .sm-x-caveat .sm-x-eyebrow { color: #9a6700; }
+[data-md-color-scheme="slate"] .md-typeset .sm-x-caveat .sm-x-eyebrow { color: #f2c25c; }
+.md-typeset .sm-x-caveat ul { margin: .5rem 0 0; padding-left: 1.1rem; }
+.md-typeset .sm-x-caveat li { margin: .3rem 0; font-size: .7rem; color: var(--x-ink); }

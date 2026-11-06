@@ -23,7 +23,7 @@
   // Measures a row can be read by. `frac` maps the value onto 0-1 for bars and cells.
   const METRICS = {
     gate: { label: "Requirements met", get: (r) => r.gate_pct, fmt: pct, frac: (v) => (v == null ? null : v / 100) },
-    quality: { label: "Quality when met", get: (r) => r.quality_when_met, fmt: (v) => num(v), frac: (v) => v },
+    quality: { label: "Score when met", get: (r) => r.quality_when_met, fmt: (v) => num(v), frac: (v) => v },
   };
   const levelMetric = (g) => ({ label: `${cap(g)} score`, get: (r) => (r.group_scores || {})[g], fmt: (v) => num(v), frac: (v) => v });
   const metricFor = (key) => METRICS[key] || levelMetric(key);
@@ -74,7 +74,7 @@
   const tipHtml = (title, rows) =>
     esc(`<strong>${title}</strong>` + rows.map(([k, v]) => `<span><em>${k}</em><b>${v}</b></span>`).join(""));
   const rowTip = (r, extra = []) => tipHtml(esc(name(r)), [
-    ["Requirements met", pct(r.gate_pct)], ["Quality when met", num(r.quality_when_met)],
+    ["Requirements met", pct(r.gate_pct)], ["Score when met", num(r.quality_when_met)],
     ...extra, ...(effort(r) ? [["Reasoning", effort(r)]] : []),
   ]);
 
@@ -103,10 +103,10 @@
       tile("Tasks", s.n_tasks, `${s.groups.map(cap).join(" · ")} · one answer each`) +
       tile("Models", rows.length, "evaluated zero-shot, no ranking") +
       (mostMet ? tile("Most requirements met", pct(mostMet.gate_pct), esc(name(mostMet))) : "") +
-      (bestQ ? tile("Best quality when met", num(bestQ.quality_when_met, 2), esc(name(bestQ))) : "") +
+      (bestQ ? tile("Best score when met", num(bestQ.quality_when_met, 2), esc(name(bestQ))) : "") +
       (featured && base ? tile("Effect of fine-tuning",
         `${num(base.quality_when_met, 2)} → ${num(featured.quality_when_met, 2)}`,
-        `quality when met; requirements met ${pct(base.gate_pct)} → ${pct(featured.gate_pct)}`, true) : "") +
+        `score when met; requirements met ${pct(base.gate_pct)} → ${pct(featured.gate_pct)}`, true) : "") +
       (ceiling != null ? tile("Reference design", num(ceiling, 2), "meets every requirement; mean score") : "") +
       `</div>`;
   }
@@ -136,7 +136,7 @@
         <p class="sm-x-muted">${esc(d.note || "")}. Trained against this referee on other heat-exchanger tasks; none of these 30 tasks was used to train it.</p>
         <div class="sm-x-spot-stats">
           <div><b>${pct(featured.gate_pct)}</b><span>requirements met</span></div>
-          <div><b>${num(featured.quality_when_met, 2)}</b><span>quality when met</span></div>
+          <div><b>${num(featured.quality_when_met, 2)}</b><span>score when met</span></div>
           <div><b>${featured.distinct_designs}</b><span>distinct designs</span></div>
         </div>
         <p class="sm-x-muted">Its working designs are the most cost-efficient in the suite, but it meets the requirements less often than most models: it sizes close to the duty target and sometimes falls just short.</p>
@@ -146,8 +146,26 @@
     </section>`;
   }
 
+  // What a reader must know before comparing the featured model with the rest.
+  function caveats(task, featured) {
+    if (!featured) return "";
+    const gates = task.suite.groups.map((g) => [g, (featured.group_gate_pct || {})[g]]);
+    const passed = gates.filter(([, v]) => v).map(([g]) => g);
+    const where = passed.length === 1 ? `only on ${passed[0]} tasks` : `on ${passed.join(" and ")} tasks`;
+    const base = task.leaderboard.find((r) => role(r) === "base");
+    return `<aside class="sm-x-caveat" aria-label="Read before comparing">
+      <p class="sm-x-eyebrow">Read before comparing</p>
+      <ul>
+        <li><b>Different tasks behind the two scores.</b> ${esc(name(featured))} met the requirements ${where}; the other models also met them on harder tasks. Its higher score when met is measured on the easiest tasks.</li>
+        <li><b>It knows this referee.</b> It was trained against the same simulator and cost model on other tasks. The other models answer zero-shot: the prompt gives the cost thresholds but not how cost is computed, so they cannot size a design to cost.</li>
+        ${base ? `<li><b>Meeting the requirements is not good design on its own.</b> ${esc(name(base))}, the untuned base model, meets them on every easy task by returning nearly the same oversized design for every task; the loose easy limits let it pass, and it earns nothing for cost.</li>` : ""}
+        <li><b>The other models are not at their best.</b> They run at their lowest reasoning effort and answer each task once. More reasoning, or the cost model in the prompt, could change these results; both are next.</li>
+      </ul>
+    </aside>`;
+  }
+
   // ── charts ────────────────────────────────────────────────────────────
-  const VIEWS = [["compare", "Compare"], ["tradeoff", "Requirements vs quality"], ["heatmap", "Heatmap"], ["tasks", "Task by task"], ["efficiency", "Cost & speed"]];
+  const VIEWS = [["compare", "Compare"], ["tradeoff", "Requirements vs score"], ["heatmap", "Heatmap"], ["tasks", "Task by task"], ["efficiency", "Cost & speed"]];
 
   // Horizontal bars ordered by the chosen measure; rows glide when it changes.
   // Deliberately no rank numbers: the suite reports measures, not a winner.
@@ -168,7 +186,7 @@
 
   function heatmap(task, rows) {
     const s = task.suite;
-    const cols = [["gate", "Req. met"], ["quality", "Quality"], ...s.groups.map((g) => [g, cap(g)])];
+    const cols = [["gate", "Req. met"], ["quality", "Score when met"], ...s.groups.map((g) => [g, cap(g)])];
     const head = cols.map(([, l]) => `<th scope="col">${l}</th>`).join("");
     const body = rows.map((r) => `<tr class="${markClass(r)}"><th scope="row">${esc(name(r))}</th>` + cols.map(([k, l]) => {
       const m = metricFor(k), v = m.get(r);
@@ -228,7 +246,7 @@
       const lead = grp.find((r) => role(r) === "featured") || grp.find((r) => role(r) === "base") || grp[0];
       const cx = sx(o.xs(lead)), cy = sy(o.ys(lead));
       const tipAttr = grp.length === 1 ? o.tipFor(lead)
-        : tipHtml(`${grp.length} models`, grp.map((r) => [esc(name(r)), ""]).concat([["Requirements met", pct(lead.gate_pct)], ["Quality when met", num(lead.quality_when_met)]]));
+        : tipHtml(`${grp.length} models`, grp.map((r) => [esc(name(r)), ""]).concat([["Requirements met", pct(lead.gate_pct)], ["Score when met", num(lead.quality_when_met)]]));
       const count = grp.length > 1 ? `<text class="sm-x-dcount" x="${cx}" y="${cy + 20}" text-anchor="middle">×${grp.length}</text>` : "";
       const labelled = grp.filter((r) => o.label(r));
       let lbl = "";
@@ -256,10 +274,10 @@
     const mostMet = best(rows, (r) => r.gate_pct);
     const refs = task.suite.groups.map((g) => task.suite.reference_mean_score[g]).filter((v) => v != null);
     const refMean = refs.length ? refs.reduce((a, b) => a + b, 0) / refs.length : null;
-    return `<p class="sm-x-note">Two separate measures: how often a model's design meets every requirement (right is better), and how good its working designs are (up is better). The reference design meets every requirement on every task.</p>` +
+    return `<p class="sm-x-note">Two separate measures: how often a model's design meets every requirement (right is better), and what its working designs score (up is better). The reference design meets every requirement on every task.</p>` +
       scatter(rows, {
         xs: (r) => r.gate_pct, ys: (r) => r.quality_when_met,
-        xLabel: "Requirements met (share of tasks)", yLabel: "Quality when met (mean score)",
+        xLabel: "Requirements met (share of tasks)", yLabel: "Score when met (mean score of working designs)",
         xDomain: () => [0, 100], yDomain: [0, 1],
         xTicks: (a, b) => steps(a, b, 20, (v) => `${v}%`), yTicks: steps(0, 1, 0.2, (v) => v.toFixed(1)),
         label: (r) => role(r) || r === mostMet,
@@ -291,7 +309,7 @@
 
   // ── table ─────────────────────────────────────────────────────────────
   const COLS = [
-    ["gate_pct", "Req. met", "gatebar"], ["quality_when_met", "Quality", "score"],
+    ["gate_pct", "Req. met", "gatebar"], ["quality_when_met", "Score when met", "score"],
     ["group:easy", "Easy", "heat"], ["group:medium", "Medium", "heat"], ["group:hard", "Hard", "heat"],
     ["valid_pct", "Valid", "pct"], ["cost_usd", "Cost", "usd"], ["p50_latency_s", "Latency", "sec"],
   ];
@@ -337,9 +355,9 @@
       const asked = new URLSearchParams(location.search).get("view");
       if (VIEWS.some(([id]) => id === asked)) state.view = asked;
     } catch (_) { /* no URL API: keep the default view */ }
-    const metricKeys = [["gate", "Requirements met"], ["quality", "Quality when met"], ...task.suite.groups.map((g) => [g, cap(g)])];
+    const metricKeys = [["gate", "Requirements met"], ["quality", "Score when met"], ...task.suite.groups.map((g) => [g, cap(g)])];
 
-    root.innerHTML = header(task) + kpis(task, rows, featured, base) + spotlight(task, featured, base, rival) +
+    root.innerHTML = header(task) + kpis(task, rows, featured, base) + spotlight(task, featured, base, rival) + caveats(task, featured) +
       `<section class="sm-x-panel" aria-label="Interactive charts">
         <div class="sm-x-tabs" role="tablist">${VIEWS.map(([id, l]) => `<button type="button" role="tab" data-view="${id}">${l}</button>`).join("")}</div>
         <div class="sm-x-controls"></div><div class="sm-x-chart"></div>
@@ -347,7 +365,7 @@
       <section class="sm-x-panel" aria-label="All results">
         <div class="sm-x-panel-head"><h3>All results</h3><input type="search" class="sm-x-search" placeholder="Find a model…" aria-label="Find a model"></div>
         <div class="sm-x-table-wrap"></div>
-        <p class="sm-x-note"><b>Req. met:</b> share of the 30 answers whose design reaches the duty target and stays inside both pressure-drop limits. <b>Quality:</b> mean score of those answers (0.3 for a design that only meets the requirements, up to 1 for a cheap, well-engineered one). <b>Easy / Medium / Hard:</b> mean score per level, failed designs counting as 0. There is no overall ranking; rows are listed by requirements met, then quality. Select a column to sort.</p>
+        <p class="sm-x-note"><b>Req. met:</b> share of the 30 answers whose design reaches the duty target and stays inside both pressure-drop limits. <b>Score when met:</b> mean score of those answers (0.3 for a design that only meets the requirements, up to 1 for a cheap, well-engineered one). <b>Easy / Medium / Hard:</b> mean score per level, failed designs counting as 0. There is no overall ranking; rows are listed by requirements met, then score when met. Select a column to sort.</p>
       </section>`;
 
     const chart = root.querySelector(".sm-x-chart"), controls = root.querySelector(".sm-x-controls");
